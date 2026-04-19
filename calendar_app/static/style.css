@@ -44,6 +44,19 @@ body {
     min-height: 100vh;
     padding: 10px;
     color: var(--text);
+    position: relative;
+}
+
+.version-badge {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8rem;
+    font-weight: 500;
+    z-index: 999;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
 }
 
 .app {
@@ -74,6 +87,18 @@ body {
     color: var(--text);
 }
 
+.user-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-name {
+    color: var(--text);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
 .theme-toggle {
     background: none;
     border: none;
@@ -88,6 +113,20 @@ body {
     background: var(--hover);
 }
 
+.logout-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px 8px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.logout-btn:hover {
+    background: var(--hover);
+}
+
 .header-controls {
     display: flex;
     justify-content: space-between;
@@ -99,6 +138,7 @@ body {
 .date-selector {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
 .modern-select {
@@ -122,6 +162,7 @@ body {
     background: var(--surface);
     color: var(--text);
     border: 1px solid var(--border);
+    white-space: nowrap;
 }
 
 .btn-primary {
@@ -146,6 +187,7 @@ body {
     display: flex;
     gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .color-input {
@@ -244,7 +286,9 @@ body {
 .calendar td {
     padding: 0;
     height: calc((100vh - 280px) / 6);
+    min-height: 80px;
     vertical-align: top;
+    background: var(--surface);
 }
 
 .day-cell {
@@ -255,11 +299,17 @@ body {
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     display: flex;
     flex-direction: column;
     position: relative;
     overflow: hidden;
+    box-sizing: border-box;
+}
+
+.day-cell.today {
+    border: 3px solid var(--primary) !important;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
 }
 
 .day-cell:hover {
@@ -361,6 +411,7 @@ body {
     background: var(--hover);
     border-radius: 8px;
     opacity: 0.5;
+    border: 1px solid var(--border);
 }
 
 /* Модальные окна */
@@ -682,6 +733,10 @@ textarea.form-input {
         align-items: stretch;
     }
 
+    .date-selector {
+        justify-content: center;
+    }
+
     .calendar td {
         height: calc((100vh - 350px) / 6);
     }
@@ -711,21 +766,5 @@ textarea.form-input {
     .event-title {
         font-size: 0.6rem;
         padding: 1px 2px;
-    }
-}
-
-@media (max-width: 480px) {
-    .calendar th {
-        padding: 5px 3px;
-        font-size: 0.7rem;
-    }
-
-    .day-cell {
-        min-height: 50px;
-        padding: 3px;
-    }
-
-    .day-number {
-        font-size: 0.8rem;
     }
 }

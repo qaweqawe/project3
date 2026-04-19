@@ -8,10 +8,16 @@
 </head>
 <body>
     <div class="app">
+        <div class="version-badge">v1.0-release</div>
+
         <header class="app-header">
             <div class="header-top">
                 <h1>📅 Календарь</h1>
-                <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+                <div class="user-controls">
+                    <span class="user-name">👤 {{ user.username }}</span>
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Переключить тему">🌙</button>
+                    <button class="logout-btn" onclick="logout()" title="Выйти">🚪</button>
+                </div>
             </div>
             <div class="header-controls">
                 <div class="date-selector">
@@ -31,24 +37,25 @@
                         <option value="12">Декабрь</option>
                     </select>
                     <button onclick="loadCalendar()" class="btn btn-primary">Показать</button>
+                    <button onclick="goToToday()" class="btn btn-secondary">📍 Сегодня</button>
                 </div>
 
                 <div class="color-tools">
-                    <input type="color" id="day-color" value="#ff6b6b" class="color-input">
+                    <input type="color" id="day-color" value="#ff6b6b" class="color-input" title="Выберите цвет">
                     <button onclick="toggleColorMode()" class="btn btn-secondary" id="colorModeBtn">
                         🎨 Выбрать дни
                     </button>
                     <button onclick="applyColorToSelected()" class="btn btn-primary" id="applyColorBtn" style="display: none;">
                         Применить
                     </button>
-                    <button onclick="clearSelectedColors()" class="btn btn-outline">Очистить</button>
+                    <button onclick="clearSelectedColors()" class="btn btn-outline" id="clearColorBtn" title="Очистить цвета">🗑️ Очистить</button>
                 </div>
             </div>
         </header>
 
         <main class="calendar-main">
             <div class="calendar-header">
-                <h2 id="current-month"></h2>
+                <h2 id="current-month">Загрузка...</h2>
                 <div class="calendar-legend">
                     <span class="legend-item"><span class="legend-color holiday"></span>Праздник</span>
                     <span class="legend-item"><span class="legend-color event"></span>Событие</span>
@@ -60,16 +67,28 @@
                 <table class="calendar">
                     <thead>
                         <tr>
-                            <th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th>
-                            <th class="weekend">Сб</th><th class="weekend">Вс</th>
+                            <th>Пн</th>
+                            <th>Вт</th>
+                            <th>Ср</th>
+                            <th>Чт</th>
+                            <th>Пт</th>
+                            <th class="weekend">Сб</th>
+                            <th class="weekend">Вс</th>
                         </tr>
                     </thead>
-                    <tbody id="calendar-body"></tbody>
+                    <tbody id="calendar-body">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                                Загрузка календаря...
+                            </td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </main>
     </div>
 
+    <!-- Модальное окно информации о дне -->
     <div id="info-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -86,6 +105,7 @@
             </div>
         </div>
     </div>
+
 
     <div id="edit-modal" class="modal">
         <div class="modal-content">
@@ -120,7 +140,7 @@
 
                 <div id="event-tab" class="tab-content">
                     <div id="events-list" class="events-list"></div>
-                    <input type="text" id="event-title" placeholder="Название" class="form-input">
+                    <input type="text" id="event-title" placeholder="Название события" class="form-input">
                     <textarea id="event-description" placeholder="Описание" rows="2" class="form-input"></textarea>
                     <div class="color-selector">
                         <label>Цвет события:</label>
@@ -143,6 +163,18 @@
         </div>
     </div>
 
+    <script>
+        const TODAY_DATE = "{{ current_year }}-{{ '%02d' % current_month }}-{{ '%02d' % current_day }}";
+        const CURRENT_YEAR = {{ current_year }};
+        const CURRENT_MONTH = {{ current_month }};
+        const USER_THEME = "{{ user.theme }}";
+
+        function logout() {
+            if (confirm('Выйти из аккаунта?')) {
+                window.location.href = '/logout';
+            }
+        }
+    </script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
