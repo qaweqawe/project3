@@ -1,20 +1,22 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Календарь 2010-2044 | Flask 3.1.3</title>
+    <title>Календарь 2010-2044</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="app">
         <header class="app-header">
-            <h1>📅 Календарь с заметками</h1>
+            <div class="header-top">
+                <h1>📅 Календарь</h1>
+                <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+            </div>
             <div class="header-controls">
                 <div class="date-selector">
-                    <select id="year-select" class="modern-select" aria-label="Выберите год"></select>
-                    <select id="month-select" class="modern-select" aria-label="Выберите месяц">
+                    <select id="year-select" class="modern-select"></select>
+                    <select id="month-select" class="modern-select">
                         <option value="1">Январь</option>
                         <option value="2">Февраль</option>
                         <option value="3">Март</option>
@@ -32,25 +34,25 @@
                 </div>
 
                 <div class="color-tools">
-                    <div class="tool-group">
-                        <label for="day-color">Цвет:</label>
-                        <input type="color" id="day-color" value="#ff6b6b" class="color-input">
-                    </div>
-                    <div class="tool-group">
-                        <button onclick="applyColorToDays()" class="btn btn-secondary">🎨 Применить</button>
-                        <button onclick="clearColors()" class="btn btn-outline">🔄 Очистить</button>
-                    </div>
+                    <input type="color" id="day-color" value="#ff6b6b" class="color-input">
+                    <button onclick="toggleColorMode()" class="btn btn-secondary" id="colorModeBtn">
+                        🎨 Выбрать дни
+                    </button>
+                    <button onclick="applyColorToSelected()" class="btn btn-primary" id="applyColorBtn" style="display: none;">
+                        Применить
+                    </button>
+                    <button onclick="clearSelectedColors()" class="btn btn-outline">Очистить</button>
                 </div>
             </div>
         </header>
 
         <main class="calendar-main">
             <div class="calendar-header">
-                <h2 id="current-month" class="month-title"></h2>
+                <h2 id="current-month"></h2>
                 <div class="calendar-legend">
-                    <span class="legend-item"><span class="legend-color" style="background: #ff6b6b;"></span>Праздник</span>
-                    <span class="legend-item"><span class="legend-color" style="background: #4ecdc4;"></span>Памятная дата</span>
-                    <span class="legend-item"><span class="legend-color" style="background: #667eea;"></span>Событие</span>
+                    <span class="legend-item"><span class="legend-color holiday"></span>Праздник</span>
+                    <span class="legend-item"><span class="legend-color event"></span>Событие</span>
+                    <span class="legend-item"><span class="legend-color comment"></span>Заметка</span>
                 </div>
             </div>
 
@@ -58,13 +60,8 @@
                 <table class="calendar">
                     <thead>
                         <tr>
-                            <th>Пн</th>
-                            <th>Вт</th>
-                            <th>Ср</th>
-                            <th>Чт</th>
-                            <th>Пт</th>
-                            <th class="weekend">Сб</th>
-                            <th class="weekend">Вс</th>
+                            <th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th>
+                            <th class="weekend">Сб</th><th class="weekend">Вс</th>
                         </tr>
                     </thead>
                     <tbody id="calendar-body"></tbody>
@@ -73,12 +70,28 @@
         </main>
     </div>
 
-    <!-- Модальное окно -->
-    <div id="comment-modal" class="modal">
+    <div id="info-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modal-title"></h3>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
+                <h3 id="info-title"></h3>
+                <div class="modal-header-actions">
+                    <button class="edit-btn" onclick="openEditModal()" title="Редактировать">✏️</button>
+                    <button class="modal-close" onclick="closeInfoModal()">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="holiday-info" class="info-section"></div>
+                <div id="events-info" class="info-section"></div>
+                <div id="comment-info" class="info-section"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="edit-title"></h3>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="modal-tabs">
@@ -87,25 +100,44 @@
                 </div>
 
                 <div id="note-tab" class="tab-content active">
-                    <textarea id="comment-text" placeholder="Введите заметку..." rows="6" class="form-input"></textarea>
-                    <button onclick="saveComment()" class="btn btn-primary btn-full">💾 Сохранить</button>
+                    <div class="color-selector">
+                        <label>Цвет заметки:</label>
+                        <div class="color-options">
+                            <div class="color-option" style="background: #667eea;" onclick="selectCommentColor('#667eea')"></div>
+                            <div class="color-option" style="background: #f56565;" onclick="selectCommentColor('#f56565')"></div>
+                            <div class="color-option" style="background: #48bb78;" onclick="selectCommentColor('#48bb78')"></div>
+                            <div class="color-option" style="background: #ed8936;" onclick="selectCommentColor('#ed8936')"></div>
+                            <div class="color-option" style="background: #9f7aea;" onclick="selectCommentColor('#9f7aea')"></div>
+                        </div>
+                        <input type="hidden" id="comment-color" value="#667eea">
+                    </div>
+                    <textarea id="comment-text" placeholder="Введите заметку..." rows="4" class="form-input"></textarea>
+                    <div class="button-group">
+                        <button onclick="saveComment()" class="btn btn-primary">💾 Сохранить</button>
+                        <button onclick="deleteComment()" class="btn btn-outline" id="delete-comment-btn" style="display: none;">🗑️ Удалить</button>
+                    </div>
                 </div>
 
                 <div id="event-tab" class="tab-content">
-                    <input type="text" id="event-title" placeholder="Название события" class="form-input">
-                    <textarea id="event-description" placeholder="Описание" rows="3" class="form-input"></textarea>
+                    <div id="events-list" class="events-list"></div>
+                    <input type="text" id="event-title" placeholder="Название" class="form-input">
+                    <textarea id="event-description" placeholder="Описание" rows="2" class="form-input"></textarea>
                     <div class="color-selector">
-                        <label>Цвет:</label>
+                        <label>Цвет события:</label>
                         <div class="color-options">
+                            <div class="color-option" style="background: #48bb78;" onclick="selectEventColor('#48bb78')"></div>
                             <div class="color-option" style="background: #667eea;" onclick="selectEventColor('#667eea')"></div>
                             <div class="color-option" style="background: #f56565;" onclick="selectEventColor('#f56565')"></div>
-                            <div class="color-option" style="background: #48bb78;" onclick="selectEventColor('#48bb78')"></div>
                             <div class="color-option" style="background: #ed8936;" onclick="selectEventColor('#ed8936')"></div>
+                            <div class="color-option" style="background: #9f7aea;" onclick="selectEventColor('#9f7aea')"></div>
                         </div>
-                        <input type="hidden" id="event-color" value="#667eea">
+                        <input type="hidden" id="event-color" value="#48bb78">
+                        <input type="hidden" id="editing-event-id" value="">
                     </div>
-                    <button onclick="saveEvent()" class="btn btn-primary btn-full">➕ Добавить</button>
-                    <div id="events-list" class="events-list"></div>
+                    <div class="button-group">
+                        <button onclick="saveEvent()" class="btn btn-primary" id="save-event-btn">➕ Добавить событие</button>
+                        <button onclick="cancelEditEvent()" class="btn btn-outline" id="cancel-edit-btn" style="display: none;">Отмена</button>
+                    </div>
                 </div>
             </div>
         </div>
