@@ -9,6 +9,66 @@ let currentTheme = 'light';
 let currentCommentId = null;
 let editingEventId = null;
 let todayDate = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+let currentTheme = localStorage.getItem('theme') || 'light';
+
+function loadTheme() {
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    document.querySelector('.theme-toggle').textContent = currentTheme === 'light' ? '🌙' : '☀️';
+}
+
+function toggleTheme() {
+    currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+    localStorage.setItem('theme', currentTheme);
+    loadTheme();
+    fetch('/update_theme', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({theme: currentTheme})
+    });
+    loadCalendar();
+}
+
+// Уведомления
+async function toggleNotifications() {
+    const panel = document.getElementById('notifications-panel');
+    if (panel.style.display === 'none') {
+        await loadNotifications();
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+async function loadNotifications() {
+    try {
+        const res = await fetch('/api/notifications');
+        const data = await res.json();
+        const badge = document.getElementById('notification-badge');
+        badge.textContent = data.unread_count;
+        badge.style.display = data.unread_count > 0 ? 'inline' : 'none';
+
+        const panel = document.getElementById('notifications-panel');
+        panel.innerHTML = `
+            <div style="padding:15px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;">
+                <strong>Уведомления</strong>
+                <button onclick="markAllRead()" style="background:none;border:none;color:var(--primary);cursor:pointer;">Прочитать все</button>
+            </div>
+            <div style="max-height:400px;overflow-y:auto;">
+                ${data.notifications.length ? data.notifications.map(n => `
+                    <div style="padding:15px;border-bottom:1px solid var(--border);${n.read ? '' : 'background:rgba(102,126,234,0.1);'}">
+                        <div style="font-weight:600;">${n.title}</div>
+                        <div style="font-size:0.9rem;color:var(--text-secondary);">${n.message}</div>
+                    </div>
+                `).join('') : '<div style="padding:30px;text-align:center;color:var(--text-secondary);">Нет уведомлений</div>'}
+            </div>
+        `;
+    } catch(e) {}
+}
+
+async function markAllRead() {
+    await fetch('/api/notifications/read_all', {method:'POST'});
+    loadNotifications();
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM загружен, инициализация...');
@@ -28,7 +88,6 @@ function loadTheme() {
     const savedTheme = localStorage.getItem('theme');
     const defaultTheme = (typeof USER_THEME !== 'undefined' && USER_THEME) ? USER_THEME : 'light';
     currentTheme = savedTheme || defaultTheme;
-
     document.documentElement.setAttribute('data-theme', currentTheme);
     updateThemeIcon();
 }
@@ -114,6 +173,7 @@ async function loadCalendar() {
         console.log('Fetch URL:', url);
 
         const response = await fetch(url);
+        console.log('Response status:', response.status);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -124,6 +184,10 @@ async function loadCalendar() {
 
         if (data.error) {
             throw new Error(data.error);
+        }
+
+        if (!data.calendar) {
+            throw new Error('Нет данных календаря');
         }
 
         monthTitle.textContent = `${data.month_name} ${data.year}`;
@@ -144,7 +208,7 @@ async function loadCalendar() {
 }
 
 function renderCalendar(calendarData) {
-    console.log('Рендеринг календаря...');
+    console.log('Рендеринг календаря, получено недель:', calendarData.length);
     const tbody = document.getElementById('calendar-body');
     tbody.innerHTML = '';
     selectedDays.clear();
@@ -155,66 +219,59 @@ function renderCalendar(calendarData) {
         return;
     }
 
-    calendarData.forEach((week) => {
+    for (let week of calendarData) {
         const row = document.createElement('tr');
 
-        week.forEach((day) => {
+        for (let day of week) {
             const cell = document.createElement('td');
 
-            if (day.day === '') {
+            if (day.day === '' || day.day === 0) {
                 cell.className = 'empty-day';
-                cell.innerHTML = '<div style="height: 100%; min-height: 80px;"></div>';
+                const emptyDiv = document.createElement('div');
+                emptyDiv.style.height = '100%';
+                emptyDiv.style.minHeight = '80px';
+                cell.appendChild(emptyDiv);
             } else {
                 const dayDiv = document.createElement('div');
                 dayDiv.className = 'day-cell';
                 dayDiv.setAttribute('data-date', day.date);
 
+                // Проверяем сегодняшнюю дату
                 if (day.date === todayDate) {
                     dayDiv.classList.add('today');
                 }
 
+                // Устанавливаем цвет фона
                 if (day.color) {
                     dayDiv.style.backgroundColor = hexToRgba(day.color,
                         currentTheme === 'dark' ? 0.3 : 0.15);
                 }
 
-                const header = document.createElement('div');
-                header.className = 'day-header';
-
-                const dayNumber = document.createElement('span');
+                // Число дня
+                const dayNumber = document.createElement('div');
                 dayNumber.className = 'day-number' + (day.is_holiday ? ' holiday' : '');
                 dayNumber.textContent = day.day;
-                header.appendChild(dayNumber);
+                dayDiv.appendChild(dayNumber);
 
-                const editPencil = document.createElement('span');
-                editPencil.className = 'edit-pencil';
-                editPencil.textContent = '✏️';
-                editPencil.onclick = (e) => {
-                    e.stopPropagation();
-                    openEditModalDirect(day.date);
-                };
-                header.appendChild(editPencil);
-
-                dayDiv.appendChild(header);
-
+                // Праздник
                 if (day.is_holiday && day.holiday_name) {
                     const holidayDiv = document.createElement('div');
                     holidayDiv.className = 'holiday-name';
                     holidayDiv.textContent = day.holiday_name;
+                    holidayDiv.title = day.holiday_name;
                     dayDiv.appendChild(holidayDiv);
                 }
 
+                // События
                 if (day.events && day.events.length > 0) {
                     const eventsContainer = document.createElement('div');
                     eventsContainer.className = 'events-container';
 
-                    const maxEvents = Math.min(day.events.length, 3);
-
-                    for (let i = 0; i < maxEvents; i++) {
+                    for (let i = 0; i < Math.min(day.events.length, 3); i++) {
                         const event = day.events[i];
                         const eventTitle = document.createElement('div');
                         eventTitle.className = 'event-title';
-                        eventTitle.style.backgroundColor = event.color;
+                        eventTitle.style.backgroundColor = event.color || '#48bb78';
                         eventTitle.textContent = event.title;
                         eventTitle.title = event.title;
                         eventsContainer.appendChild(eventTitle);
@@ -231,6 +288,7 @@ function renderCalendar(calendarData) {
                     dayDiv.appendChild(eventsContainer);
                 }
 
+                // Индикатор заметки
                 if (day.has_comment) {
                     const footer = document.createElement('div');
                     footer.className = 'day-footer';
@@ -242,8 +300,10 @@ function renderCalendar(calendarData) {
                 }
 
                 dayDiv.onclick = (e) => {
-                    if (!e.target.classList.contains('edit-pencil')) {
+                    if (colorMode) {
                         handleDayClick(e, day.date);
+                    } else {
+                        openInfoModal(day.date);
                     }
                 };
 
@@ -251,10 +311,10 @@ function renderCalendar(calendarData) {
             }
 
             row.appendChild(cell);
-        });
+        }
 
         tbody.appendChild(row);
-    });
+    }
 
     console.log('Календарь отрисован');
 }
@@ -269,8 +329,6 @@ function handleDayClick(event, date) {
         } else {
             selectedDays.add(date);
         }
-    } else {
-        openInfoModal(date);
     }
 }
 
@@ -292,6 +350,7 @@ async function openInfoModal(date) {
         const eventsInfo = document.getElementById('events-info');
         const commentInfo = document.getElementById('comment-info');
 
+        // Праздник
         if (data.holiday) {
             holidayInfo.innerHTML = `
                 <h4>🎉 Праздник</h4>
@@ -303,6 +362,7 @@ async function openInfoModal(date) {
             holidayInfo.style.display = 'none';
         }
 
+        // События
         if (data.events && data.events.length > 0) {
             let eventsHtml = '<h4>📌 События</h4>';
             data.events.forEach(event => {
@@ -324,6 +384,7 @@ async function openInfoModal(date) {
             eventsInfo.innerHTML = '<h4>📌 События</h4><p style="color: var(--text-secondary);">Нет событий</p>';
         }
 
+        // Заметка
         if (data.comment) {
             commentInfo.innerHTML = `
                 <h4>📝 Заметка</h4>
@@ -408,35 +469,25 @@ async function openEditModalDirect(date) {
 }
 
 function formatDate(dateStr) {
-    const [year, month, day] = dateStr.split('-');
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+
     const months = ['Января', 'Февраля', 'Марта', 'Апреля', 'Мая', 'Июня',
                     'Июля', 'Августа', 'Сентября', 'Октября', 'Ноября', 'Декабря'];
-    return `${day} ${months[parseInt(month) - 1]} ${year}`;
+    return `${parts[2]} ${months[parseInt(parts[1]) - 1]} ${parts[0]}`;
 }
 
 function closeInfoModal() {
     const modal = document.getElementById('info-modal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
+    if (modal) modal.style.display = 'none';
 }
 
 function closeEditModal() {
     const modal = document.getElementById('edit-modal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
+    if (modal) modal.style.display = 'none';
     selectedDate = null;
     editingEventId = null;
-    document.getElementById('editing-event-id').value = '';
-    const saveBtn = document.getElementById('save-event-btn');
-    if (saveBtn) {
-        saveBtn.textContent = '➕ Добавить событие';
-    }
-    const cancelBtn = document.getElementById('cancel-edit-btn');
-    if (cancelBtn) {
-        cancelBtn.style.display = 'none';
-    }
 }
 
 function hexToRgba(hex, alpha) {
@@ -673,9 +724,7 @@ async function editEvent(eventId) {
         await openEditModalDirect(event.date);
 
         setTimeout(() => {
-            // Переключаемся на вкладку событий
             switchTab('event');
-
             document.getElementById('event-title').value = event.title;
             document.getElementById('event-description').value = event.description || '';
             document.getElementById('event-color').value = event.color;
@@ -779,7 +828,6 @@ async function loadEventsList(date) {
         }
     } catch (error) {
         console.error('Ошибка загрузки событий:', error);
-        eventsList.innerHTML = '<p style="color: var(--error);">Ошибка загрузки событий</p>';
     }
 }
 
@@ -834,8 +882,7 @@ function initDraggable() {
         let currentX, currentY, initialX, initialY;
 
         modalHeader.onmousedown = (e) => {
-            if (e.target.classList.contains('edit-pencil') ||
-                e.target.classList.contains('modal-close') ||
+            if (e.target.classList.contains('modal-close') ||
                 e.target.classList.contains('edit-btn') ||
                 e.target.classList.contains('btn-icon')) return;
 
@@ -870,7 +917,6 @@ function initDraggable() {
     });
 }
 
-// Закрытие модальных окон по клику вне их
 window.onclick = function(event) {
     const infoModal = document.getElementById('info-modal');
     const editModal = document.getElementById('edit-modal');
@@ -883,7 +929,6 @@ window.onclick = function(event) {
     }
 }
 
-// Закрытие по Escape
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         closeInfoModal();

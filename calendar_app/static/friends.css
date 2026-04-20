@@ -1,0 +1,211 @@
+.friends-main {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    flex: 1;
+    overflow: hidden;
+}
+
+.friends-container {
+    display: flex;
+    height: 100%;
+    gap: 20px;
+}
+
+.friends-sidebar {
+    width: 300px;
+    flex-shrink: 0;
+}
+
+.friends-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.friends-search {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    background: var(--surface);
+    color: var(--text);
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: var(--shadow);
+    margin-top: 5px;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.search-result-item:hover {
+    background: var(--hover);
+}
+
+.friends-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid var(--border);
+}
+
+.friends-tabs .tab-btn {
+    flex: 1;
+    padding: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    position: relative;
+}
+
+.friends-tabs .tab-btn.active {
+    color: var(--primary);
+}
+
+.friends-tabs .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--primary);
+}
+
+.badge {
+    background: var(--holiday);
+    color: white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    margin-left: 5px;
+    display: none;
+}
+
+.friends-list {
+    margin-top: 15px;
+}
+
+.friend-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--hover);
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.user-avatar-small {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--primary);
+}
+
+.friend-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.username {
+    font-weight: 500;
+    color: var(--text);
+}
+
+.online-badge {
+    font-size: 0.75rem;
+    color: var(--success);
+}
+
+.friend-badge {
+    color: var(--success);
+    font-size: 0.85rem;
+}
+
+.request-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-success {
+    background: var(--success);
+    color: white;
+}
+
+.btn-danger {
+    background: var(--holiday);
+    color: white;
+}
+
+.empty-state, .loading, .no-results {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 30px;
+}
+
+.back-btn {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    margin-right: 15px;
+}
+
+.back-btn:hover {
+    text-decoration: underline;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .friends-container {
+        flex-direction: column;
+    }
+
+    .friends-sidebar {
+        width: 100%;
+    }
+}
