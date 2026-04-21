@@ -11,8 +11,8 @@
     --surface: #ffffff;
     --text: #1a1a2e;
     --text-secondary: #4a5568;
-    --border: #e2e8f0;
-    --hover: #f7fafc;
+    --border: #cbd5e0;
+    --hover: #edf2f7;
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     --modal-overlay: rgba(0, 0, 0, 0.5);
     --event-bg: #f7fafc;
@@ -24,7 +24,7 @@
     --surface: #1e1e2e;
     --text: #ffffff;
     --text-secondary: #a0aec0;
-    --border: #2d3748;
+    --border: #4a5568;
     --hover: #2d3748;
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     --modal-overlay: rgba(0, 0, 0, 0.8);
@@ -74,7 +74,7 @@ body {
 .app-header {
     background: var(--surface);
     border-radius: 20px;
-    padding: 20px 25px;
+    padding: 15px 25px;
     margin-bottom: 15px;
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
@@ -84,11 +84,11 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 18px;
+    margin-bottom: 15px;
 }
 
 .app-header h1 {
-    font-size: 2rem;
+    font-size: 1.8rem;
     color: var(--text);
     display: flex;
     align-items: center;
@@ -124,24 +124,24 @@ body {
 .profile-link {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     text-decoration: none;
     color: var(--text);
-    padding: 6px 16px 6px 8px;
+    padding: 4px 14px 4px 6px;
     border-radius: 40px;
     background: var(--hover);
     border: 1px solid var(--border);
-    transition: all 0.3s;
+    transition: background 0.2s;
 }
 
+/* Убрана анимация, только выделение */
 .profile-link:hover {
     background: var(--border);
-    transform: translateY(-2px);
 }
 
 .user-avatar {
-    width: 38px;
-    height: 38px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid var(--primary);
@@ -149,10 +149,10 @@ body {
 
 .user-name {
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 0.95rem;
 }
 
-.logout-btn {
+.logout-btn, .theme-toggle {
     background: var(--hover);
     border: 1px solid var(--border);
     font-size: 1.3rem;
@@ -168,25 +168,9 @@ body {
     color: var(--text);
 }
 
-.logout-btn:hover {
-    background: var(--holiday);
-    color: white;
+.logout-btn:hover, .theme-toggle:hover {
+    background: var(--border);
     transform: scale(1.05);
-}
-
-.theme-toggle {
-    background: var(--hover);
-    border: 1px solid var(--border);
-    font-size: 1.3rem;
-    cursor: pointer;
-    padding: 0;
-    border-radius: 50%;
-    width: 45px;
-    height: 45px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s;
 }
 
 .header-controls {
@@ -275,7 +259,7 @@ input[type="color"] {
 .calendar-main {
     background: var(--surface);
     border-radius: 20px;
-    padding: 20px;
+    padding: 15px;
     box-shadow: var(--shadow);
     flex: 1;
     display: flex;
@@ -288,13 +272,13 @@ input[type="color"] {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
     border-bottom: 2px solid var(--border);
 }
 
 .calendar-header h2 {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     color: var(--text);
 }
 
@@ -319,18 +303,21 @@ input[type="color"] {
 
 .calendar-wrapper {
     flex: 1;
-    overflow-y: auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .calendar {
     width: 100%;
+    height: 100%;
     border-collapse: separate;
-    border-spacing: 6px;
+    border-spacing: 4px;
     table-layout: fixed;
 }
 
 .calendar th {
-    padding: 15px 8px;
+    padding: 12px 8px;
     font-weight: 700;
     color: var(--text-secondary);
     text-transform: uppercase;
@@ -339,15 +326,16 @@ input[type="color"] {
 }
 
 .calendar td {
-    height: 110px;
+    height: auto;
     vertical-align: top;
 }
 
 .day-cell {
     height: 100%;
-    padding: 10px;
+    min-height: 95px;
+    padding: 8px;
     background: var(--surface);
-    border-radius: 12px;
+    border-radius: 10px;
     cursor: pointer;
     border: 2px solid var(--border);
     display: flex;
@@ -359,12 +347,12 @@ input[type="color"] {
 .day-cell:hover {
     border-color: var(--primary);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    transform: translateY(-3px);
+    transform: translateY(-2px);
 }
 
 .day-cell.today {
     border: 3px solid var(--primary);
-    box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 0 15px rgba(102, 126, 234, 0.3);
 }
 
 .day-cell.selected {
@@ -373,9 +361,9 @@ input[type="color"] {
 }
 
 .day-number {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 700;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .day-number.holiday {
@@ -383,12 +371,12 @@ input[type="color"] {
 }
 
 .holiday-name {
-    font-size: 0.75rem;
-    padding: 4px 6px;
+    font-size: 0.7rem;
+    padding: 3px 5px;
     border-radius: 6px;
     background: rgba(245, 101, 101, 0.2);
     color: var(--holiday);
-    margin-bottom: 6px;
+    margin-bottom: 5px;
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
@@ -398,12 +386,12 @@ input[type="color"] {
 .events-container {
     flex: 1;
     overflow-y: auto;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 
 .event-title {
-    padding: 4px 6px;
-    margin: 3px 0;
+    padding: 3px 5px;
+    margin: 2px 0;
     border-radius: 6px;
     color: white;
     font-weight: 500;
@@ -416,21 +404,142 @@ input[type="color"] {
     display: flex;
     justify-content: flex-end;
     margin-top: auto;
-    padding-top: 5px;
+    padding-top: 4px;
 }
 
 .comment-indicator {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .empty-day {
     background: var(--hover);
-    border-radius: 12px;
+    border-radius: 10px;
     opacity: 0.4;
     border: 2px dashed var(--border);
+    min-height: 95px;
+}
+
+/* Уведомления */
+.notifications-dropdown {
+    position: relative;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--holiday);
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: bold;
+}
+
+.notifications-panel {
+    display: none;
+    position: absolute;
+    top: 45px;
+    right: 0;
+    width: 340px;
+    max-height: 450px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.notifications-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    background: var(--surface);
+}
+
+.notifications-header button {
+    background: none;
+    border: none;
+    color: var(--primary);
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.notifications-list {
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s;
+    position: relative;
+}
+
+.notification-item:hover {
+    background: var(--hover);
+}
+
+.notification-item.unread {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.notification-content {
+    cursor: pointer;
+    padding-right: 30px;
+}
+
+.notification-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.notification-message {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.notification-time {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 6px;
+}
+
+.notification-delete {
+    position: absolute;
+    top: 14px;
+    right: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+    padding: 4px;
+    z-index: 10;
+}
+
+.notification-delete:hover {
+    opacity: 1;
+    color: var(--holiday);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 30px;
+    color: var(--text-secondary);
 }
 
 /* Модальные окна */
@@ -465,12 +574,6 @@ input[type="color"] {
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
     overflow: hidden;
-    animation: slideUp 0.3s;
-}
-
-@keyframes slideUp {
-    from { transform: translate(-50%, -40%); opacity: 0; }
-    to { transform: translate(-50%, -50%); opacity: 1; }
 }
 
 .modal-header {
@@ -549,18 +652,7 @@ input[type="color"] {
     display: block;
 }
 
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: var(--text);
-}
-
-textarea, input[type="text"], input[type="date"], select {
+textarea, input[type="text"] {
     width: 100%;
     padding: 14px 16px;
     border: 2px solid var(--border);
@@ -570,9 +662,10 @@ textarea, input[type="text"], input[type="date"], select {
     color: var(--text);
     transition: all 0.3s;
     font-family: inherit;
+    margin-bottom: 15px;
 }
 
-textarea:focus, input:focus, select:focus {
+textarea:focus, input:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -583,38 +676,9 @@ textarea {
     min-height: 100px;
 }
 
-.holiday-block {
-    padding: 16px;
-    background: linear-gradient(135deg, rgba(245, 101, 101, 0.15), rgba(245, 101, 101, 0.05));
-    border-left: 5px solid var(--holiday);
-    border-radius: 12px;
-    margin-bottom: 20px;
-    font-weight: 600;
-    font-size: 1.1rem;
-}
-
-.info-section {
-    margin-bottom: 20px;
-}
-
-.info-section h4 {
-    margin-bottom: 15px;
-    color: var(--text);
-    font-size: 1.1rem;
-}
-
-.event-item {
-    padding: 15px;
-    background: var(--hover);
-    border-radius: 12px;
-    margin-bottom: 10px;
-    border-left: 4px solid;
-}
-
 .button-group {
     display: flex;
     gap: 10px;
-    margin-top: 20px;
 }
 
 .button-group .btn {
@@ -622,305 +686,14 @@ textarea {
     justify-content: center;
 }
 
-/* Страница друзей */
-.friends-page {
-    max-width: 800px;
-    margin: 0 auto;
-    background: var(--surface);
-    border-radius: 24px;
-    padding: 30px;
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border);
-}
-
-.friends-page h1 {
-    margin-bottom: 25px;
-    color: var(--text);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 2rem;
-}
-
-.back-link {
-    display: inline-block;
-    margin-bottom: 20px;
-    color: var(--primary);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 1rem;
-    padding: 10px 0;
-}
-
-.back-link:hover {
-    text-decoration: underline;
-}
-
-.search-area {
-    position: relative;
-    margin-bottom: 30px;
-}
-
-.search-area input {
-    width: 100%;
-    padding: 16px 20px;
-    border: 2px solid var(--border);
-    border-radius: 16px;
-    font-size: 1.1rem;
-    background: var(--surface);
-    color: var(--text);
-}
-
-.search-results {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: var(--surface);
-    border: 2px solid var(--border);
-    border-radius: 16px;
-    max-height: 350px;
-    overflow-y: auto;
-    z-index: 100;
-    margin-top: 8px;
-    box-shadow: var(--shadow);
-}
-
-.search-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-    transition: background 0.2s;
-}
-
-.search-item:hover {
-    background: var(--hover);
-}
-
-.search-item:last-child {
-    border-bottom: none;
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.user-avatar-large {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid var(--primary);
-}
-
-.tabs-container {
-    display: flex;
-    gap: 5px;
-    margin-bottom: 25px;
-    background: var(--hover);
-    padding: 5px;
-    border-radius: 16px;
-}
-
-.tab {
-    flex: 1;
-    padding: 14px;
-    background: transparent;
-    border: none;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    cursor: pointer;
-    border-radius: 12px;
-    transition: all 0.3s;
-}
-
-.tab.active {
-    background: var(--primary);
-    color: white;
-}
-
-.badge {
-    background: var(--holiday);
-    color: white;
-    border-radius: 20px;
-    padding: 2px 10px;
-    font-size: 0.8rem;
-    margin-left: 8px;
-}
-
-.friends-list, .requests-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.friend-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    background: var(--hover);
-    border-radius: 16px;
-    border: 1px solid var(--border);
-    transition: all 0.3s;
-}
-
-.friend-card:hover {
-    transform: translateX(5px);
-    border-color: var(--primary);
-}
-
-.actions {
-    display: flex;
-    gap: 10px;
-}
-
-.status-badge {
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    background: var(--border);
-    color: var(--text-secondary);
-}
-
-.empty-state {
-    text-align: center;
-    padding: 50px;
-    color: var(--text-secondary);
-    font-size: 1.1rem;
-}
-
-.notifications-dropdown {
-    position: relative;
-}
-
-.notification-badge {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background: var(--holiday);
-    color: white;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-    font-weight: bold;
-}
-
-.notifications-panel {
-    position: absolute;
-    top: 50px;
-    right: 0;
-    width: 350px;
-    max-height: 450px;
-    background: var(--surface);
-    border: 2px solid var(--border);
-    border-radius: 16px;
-    box-shadow: var(--shadow);
-    z-index: 1000;
-    overflow: hidden;
-}
-
-.notifications-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 18px;
-    border-bottom: 1px solid var(--border);
-    font-weight: 600;
-    background: var(--surface);
-}
-
-.notifications-header button {
-    background: none;
-    border: none;
-    color: var(--primary);
-    cursor: pointer;
-    font-size: 0.85rem;
-}
-
-.notifications-list {
-    max-height: 380px;
-    overflow-y: auto;
-}
-
-.notification-item {
-    padding: 15px 18px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.notification-item:hover {
-    background: var(--hover);
-}
-
-.notification-item.unread {
-    background: rgba(102, 126, 234, 0.1);
-}
-
-.notification-title {
-    font-weight: 600;
-    margin-bottom: 5px;
-}
-
-.notification-message {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-}
-
-.notification-time {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    margin-top: 8px;
-}
-
-.btn-small {
-    padding: 5px 10px;
-    margin: 0 3px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    background: var(--hover);
-    color: var(--text);
-}
-
-.btn-small:hover {
-    background: var(--primary);
-    color: white;
-}
-
-.btn-success {
-    background: var(--success) !important;
-    color: white !important;
-}
-
-.btn-danger {
-    background: var(--holiday) !important;
-    color: white !important;
-}
-
 /* Адаптивность */
 @media (max-width: 768px) {
     body { padding: 8px; }
     .app { height: calc(100vh - 16px); }
-    .app-header { padding: 15px; }
-    .app-header h1 { font-size: 1.5rem; }
+    .app-header { padding: 12px; }
+    .app-header h1 { font-size: 1.4rem; }
     .header-controls { flex-direction: column; align-items: stretch; }
-    .date-selector { flex-wrap: wrap; }
-    .calendar td { height: 80px; }
-    .day-cell { padding: 6px; }
-    .day-number { font-size: 1rem; }
-    .user-name { display: none; }
-    .profile-link { padding: 5px; }
     .calendar-legend { display: none; }
+    .user-name { display: none; }
+    .profile-link { padding: 4px; }
 }

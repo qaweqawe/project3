@@ -5,13 +5,85 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Календарь</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .calendar-main { padding: 12px !important; }
+        .calendar-wrapper { overflow: hidden !important; }
+        .calendar { border-spacing: 2px !important; }
+        .calendar td { height: auto !important; }
+        .day-cell { padding: 5px !important; }
+        .calendar-header { margin-bottom: 8px !important; padding-bottom: 8px !important; }
+        .calendar-header h2 { font-size: 1.3rem !important; }
+        .calendar-wrapper::-webkit-scrollbar { display: none; }
+        .calendar-wrapper { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Старый стиль для модального окна */
+        .info-section {
+            margin-bottom: 20px;
+        }
+        .info-section h4 {
+            margin-bottom: 12px;
+            color: var(--text);
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .holiday-block {
+            padding: 12px 16px;
+            background: rgba(245, 101, 101, 0.1);
+            border-left: 4px solid var(--holiday);
+            border-radius: 8px;
+            color: var(--holiday);
+            font-weight: 500;
+        }
+        .event-info-item {
+            padding: 12px;
+            background: var(--hover);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid;
+        }
+        .event-info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .event-info-title {
+            font-weight: 600;
+            color: var(--text);
+        }
+        .event-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .event-edit-btn, .event-delete-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 2px 5px;
+        }
+        .event-info-description {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+            padding-top: 5px;
+            border-top: 1px solid var(--border);
+        }
+        .comment-block {
+            padding: 12px;
+            background: var(--hover);
+            border-radius: 8px;
+            border-left: 4px solid;
+            color: var(--text);
+        }
+    </style>
 </head>
 <body>
     <div class="app">
-        <div class="version-badge">v2.0-release</div>
-        <header class="app-header">
-            <div class="header-top">
-                <h1>📅 Календарь</h1>
+        <div class="version-badge">v2.5-release</div>
+        <header class="app-header" style="padding: 12px 20px;">
+            <div class="header-top" style="margin-bottom: 12px;">
+                <h1 style="font-size: 1.5rem;">📅 Календарь</h1>
                 <div class="user-controls">
                     <a href="{{ url_for('profile') }}" class="profile-link">
                         <img src="{{ user.get_avatar_url() }}" alt="{{ user.username }}" class="user-avatar">
@@ -21,7 +93,7 @@
                     <div class="notifications-dropdown">
                         <span class="icon-link" onclick="toggleNotifications(event)">🔔</span>
                         <span id="notification-badge" class="notification-badge">0</span>
-                        <div id="notifications-panel" class="notifications-panel"></div>
+                        <div id="notifications-panel" class="notifications-panel" onclick="event.stopPropagation()"></div>
                     </div>
                     <button class="theme-toggle icon-link" onclick="toggleTheme()">🌙</button>
                     <button class="logout-btn icon-link" onclick="logout()">🚪</button>
@@ -73,10 +145,10 @@
                 <button class="modal-close" onclick="closeInfoModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <div id="holiday-info"></div>
-                <div id="events-info" style="margin-bottom:20px;"></div>
-                <div id="comment-info" style="margin-bottom:20px;"></div>
-                <button onclick="openEditModal()" class="btn btn-primary" style="width:100%;padding:14px;">✏️ Редактировать</button>
+                <div id="holiday-info" class="info-section"></div>
+                <div id="events-info" class="info-section"></div>
+                <div id="comment-info" class="info-section"></div>
+                <button onclick="openEditModal()" class="btn btn-primary" style="width:100%;margin-top:10px;">✏️ Редактировать</button>
             </div>
         </div>
     </div>
@@ -87,23 +159,23 @@
                 <h3 id="edit-title"></h3>
                 <button class="modal-close" onclick="closeEditModal()">&times;</button>
             </div>
-            <div class="modal-body" style="padding:25px;">
-                <div class="tabs" style="margin-bottom:25px;">
+            <div class="modal-body">
+                <div class="tabs">
                     <button class="tab-btn active" onclick="switchTab('note')">📝 Заметка</button>
                     <button class="tab-btn" onclick="switchTab('event')">📌 Событие</button>
                 </div>
                 <div id="note-tab" class="tab-content active">
-                    <textarea id="comment-text" placeholder="Введите заметку..." rows="5" style="margin-bottom:20px;"></textarea>
+                    <textarea id="comment-text" placeholder="Введите заметку..." rows="4"></textarea>
                     <div class="button-group">
-                        <button onclick="saveComment()" class="btn btn-primary" style="padding:14px;">💾 Сохранить</button>
-                        <button onclick="deleteComment()" class="btn btn-outline" id="delete-comment-btn" style="display:none;padding:14px;">🗑️ Удалить</button>
+                        <button onclick="saveComment()" class="btn btn-primary">💾 Сохранить</button>
+                        <button onclick="deleteComment()" class="btn btn-outline" id="delete-comment-btn" style="display:none;">🗑️ Удалить</button>
                     </div>
                 </div>
                 <div id="event-tab" class="tab-content">
-                    <input type="text" id="event-title" placeholder="Название события" style="margin-bottom:15px;">
-                    <textarea id="event-description" placeholder="Описание (необязательно)" rows="3" style="margin-bottom:15px;"></textarea>
+                    <input type="text" id="event-title" placeholder="Название события">
+                    <textarea id="event-description" placeholder="Описание" rows="2"></textarea>
                     <div style="margin-bottom:15px;">
-                        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                        <label style="display:flex;align-items:center;gap:10px;">
                             <input type="checkbox" id="share-event"> Поделиться с друзьями
                         </label>
                         <div id="friends-select" style="display:none;margin-top:10px;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:10px;">
@@ -111,10 +183,10 @@
                         </div>
                     </div>
                     <div class="button-group">
-                        <button onclick="saveEvent()" class="btn btn-primary" id="save-event-btn" style="padding:14px;">➕ Добавить</button>
-                        <button onclick="cancelEditEvent()" class="btn btn-outline" id="cancel-edit-btn" style="display:none;padding:14px;">Отмена</button>
+                        <button onclick="saveEvent()" class="btn btn-primary" id="save-event-btn">➕ Добавить</button>
+                        <button onclick="cancelEditEvent()" class="btn btn-outline" id="cancel-edit-btn" style="display:none;">Отмена</button>
                     </div>
-                    <div id="events-list" style="margin-top:25px;"></div>
+                    <div id="events-list" style="margin-top:20px;"></div>
                 </div>
             </div>
         </div>
@@ -140,12 +212,21 @@
         }
 
         function logout() { if(confirm('Выйти?')) window.location.href = '/logout'; }
+
         function initYearSelect() {
             const s = document.getElementById('year-select');
             for(let y=2010; y<=2044; y++) s.add(new Option(y, y, y==currentYear, y==currentYear));
             document.getElementById('month-select').value = currentMonth;
         }
-        function goToToday() { const d = new Date(); currentYear = d.getFullYear(); currentMonth = d.getMonth()+1; document.getElementById('year-select').value = currentYear; document.getElementById('month-select').value = currentMonth; loadCalendar(); }
+
+        function goToToday() {
+            const d = new Date();
+            currentYear = d.getFullYear();
+            currentMonth = d.getMonth()+1;
+            document.getElementById('year-select').value = currentYear;
+            document.getElementById('month-select').value = currentMonth;
+            loadCalendar();
+        }
 
         async function loadCalendar() {
             currentYear = +document.getElementById('year-select').value;
@@ -163,8 +244,10 @@
                 const tr = document.createElement('tr');
                 week.forEach(day => {
                     const td = document.createElement('td');
-                    if(day.day === '') { td.className = 'empty-day'; td.innerHTML = '<div style="min-height:80px;"></div>'; }
-                    else {
+                    if(day.day === '') {
+                        td.className = 'empty-day';
+                        td.innerHTML = '<div style="min-height:80px;"></div>';
+                    } else {
                         const div = document.createElement('div');
                         div.className = 'day-cell' + (day.date === TODAY ? ' today' : '');
                         div.setAttribute('data-date', day.date);
@@ -182,8 +265,17 @@
                             });
                             div.appendChild(ec);
                         }
-                        if(day.has_comment) { const f = document.createElement('div'); f.className = 'day-footer'; const i = document.createElement('span'); i.className = 'comment-indicator'; i.style.background = day.comment_color; f.appendChild(i); div.appendChild(f); }
-                        div.onclick = (e) => { if(colorMode) { e.currentTarget.classList.toggle('selected'); selectedDays.has(day.date) ? selectedDays.delete(day.date) : selectedDays.add(day.date); } else openInfo(day.date); };
+                        if(day.has_comment) {
+                            const f = document.createElement('div'); f.className = 'day-footer';
+                            const i = document.createElement('span'); i.className = 'comment-indicator';
+                            i.style.background = day.comment_color; f.appendChild(i); div.appendChild(f);
+                        }
+                        div.onclick = (e) => {
+                            if(colorMode) {
+                                e.currentTarget.classList.toggle('selected');
+                                selectedDays.has(day.date) ? selectedDays.delete(day.date) : selectedDays.add(day.date);
+                            } else openInfo(day.date);
+                        };
                         td.appendChild(div);
                     }
                     tr.appendChild(td);
@@ -197,14 +289,59 @@
             const res = await fetch(`/get_day_info/${date}`);
             const d = await res.json();
             document.getElementById('info-title').textContent = formatDate(date);
-            document.getElementById('holiday-info').innerHTML = d.holiday ? `<div class="holiday-block">🎉 ${d.holiday}</div>` : '';
-            document.getElementById('events-info').innerHTML = d.events.length ? '<h4 style="margin-bottom:15px;">📌 События</h4>' + d.events.map(e => `<div class="event-item" style="border-left-color:${e.color};padding:15px;margin-bottom:10px;"><b>${e.is_shared?'👥 ':''}${e.title}</b>${e.description?'<br><span style="color:var(--text-secondary);">'+e.description+'</span>':''}</div>`).join('') : '<h4 style="margin-bottom:15px;">📌 События</h4><p style="color:var(--text-secondary);padding:10px;">Нет событий</p>';
-            document.getElementById('comment-info').innerHTML = d.comment ? '<h4 style="margin-bottom:15px;">📝 Заметка</h4><div class="event-item" style="border-left-color:'+d.comment.color+';padding:15px;">'+d.comment.text+'</div>' : '<h4 style="margin-bottom:15px;">📝 Заметка</h4><p style="color:var(--text-secondary);padding:10px;">Нет заметок</p>';
-            currentCommentId = d.comment?.id;
+
+            // Праздник
+            if (d.holiday) {
+                document.getElementById('holiday-info').innerHTML = `
+                    <h4>🎉 Праздник</h4>
+                    <div class="holiday-block">${d.holiday}</div>
+                `;
+            } else {
+                document.getElementById('holiday-info').innerHTML = '';
+            }
+
+            // События
+            if (d.events && d.events.length > 0) {
+                let html = '<h4>📌 События</h4>';
+                d.events.forEach(e => {
+                    html += `
+                        <div class="event-info-item" style="border-left-color: ${e.color};">
+                            <div class="event-info-header">
+                                <span class="event-info-title">${e.is_shared ? '👥 ' : ''}${e.title}</span>
+                                <div class="event-actions">
+                                    <button class="event-edit-btn" onclick="editEvent(${e.id})">✏️</button>
+                                    <button class="event-delete-btn" onclick="deleteEventFromInfo(${e.id})">🗑️</button>
+                                </div>
+                            </div>
+                            ${e.description ? `<div class="event-info-description">${e.description}</div>` : ''}
+                        </div>
+                    `;
+                });
+                document.getElementById('events-info').innerHTML = html;
+            } else {
+                document.getElementById('events-info').innerHTML = '<h4>📌 События</h4><p style="color: var(--text-secondary);">Нет событий</p>';
+            }
+
+            // Заметка
+            if (d.comment) {
+                document.getElementById('comment-info').innerHTML = `
+                    <h4>📝 Заметка</h4>
+                    <div class="comment-block" style="border-left-color: ${d.comment.color};">${d.comment.text}</div>
+                `;
+                currentCommentId = d.comment.id;
+            } else {
+                document.getElementById('comment-info').innerHTML = '<h4>📝 Заметка</h4><p style="color: var(--text-secondary);">Нет заметок</p>';
+                currentCommentId = null;
+            }
+
             document.getElementById('info-modal').style.display = 'block';
         }
 
-        function formatDate(d) { const [y,m,day] = d.split('-'); return `${day} ${['Января','Февраля','Марта','Апреля','Мая','Июня','Июля','Августа','Сентября','Октября','Ноября','Декабря'][+m-1]} ${y}`; }
+        function formatDate(d) {
+            const [y,m,day] = d.split('-');
+            return `${day} ${['Января','Февраля','Марта','Апреля','Мая','Июня','Июля','Августа','Сентября','Октября','Ноября','Декабря'][+m-1]} ${y}`;
+        }
+
         function closeInfoModal() { document.getElementById('info-modal').style.display = 'none'; }
         function closeEditModal() { document.getElementById('edit-modal').style.display = 'none'; }
 
@@ -226,7 +363,7 @@
             const friends = await res.json();
             const div = document.getElementById('friends-list-select');
             div.innerHTML = friends.map(f => `
-                <label style="display:flex;align-items:center;gap:10px;padding:8px;cursor:pointer;">
+                <label style="display:flex;align-items:center;gap:10px;padding:8px;">
                     <input type="checkbox" value="${f.id}" onchange="toggleFriendSelect(${f.id})">
                     <img src="${f.avatar}" style="width:30px;height:30px;border-radius:50%;">
                     <span>${f.username}</span>
@@ -234,9 +371,7 @@
             `).join('');
         }
 
-        function toggleFriendSelect(id) {
-            selectedFriends.has(id) ? selectedFriends.delete(id) : selectedFriends.add(id);
-        }
+        function toggleFriendSelect(id) { selectedFriends.has(id) ? selectedFriends.delete(id) : selectedFriends.add(id); }
 
         document.getElementById('share-event').addEventListener('change', (e) => {
             document.getElementById('friends-select').style.display = e.target.checked ? 'block' : 'none';
@@ -284,7 +419,7 @@
         async function loadEventsList(date) {
             const res = await fetch(`/get_events/${date}`);
             const events = await res.json();
-            document.getElementById('events-list').innerHTML = events.length ? '<h4 style="margin-bottom:15px;">Существующие события:</h4>' + events.map(e => `<div class="event-item" style="display:flex;justify-content:space-between;align-items:center;padding:12px;margin-bottom:8px;"><span><b>${e.is_shared?'👥 ':''}${e.title}</b></span><div><button onclick="editEvent(${e.id})" class="btn-small">✏️</button><button onclick="deleteEvent(${e.id})" class="btn-small">🗑️</button></div></div>`).join('') : '';
+            document.getElementById('events-list').innerHTML = events.length ? '<h4>События:</h4>' + events.map(e => `<div style="display:flex;justify-content:space-between;padding:8px;background:var(--hover);border-radius:8px;margin-bottom:5px;"><span><b>${e.is_shared?'👥 ':''}${e.title}</b></span><div><button onclick="editEvent(${e.id})" class="btn-icon">✏️</button><button onclick="deleteEvent(${e.id})" class="btn-icon">🗑️</button></div></div>`).join('') : '';
         }
 
         async function editEvent(id) {
@@ -299,24 +434,42 @@
             switchTab('event');
         }
 
-        async function deleteEvent(id) { if(confirm('Удалить?')) { await fetch(`/delete_event/${id}`, {method:'DELETE'}); loadEventsList(selectedDate); loadCalendar(); } }
+        async function deleteEvent(id) {
+            if(confirm('Удалить?')) {
+                await fetch(`/delete_event/${id}`, {method:'DELETE'});
+                loadEventsList(selectedDate);
+                loadCalendar();
+            }
+        }
+
+        async function deleteEventFromInfo(id) {
+            if(confirm('Удалить?')) {
+                await fetch(`/delete_event/${id}`, {method:'DELETE'});
+                closeInfoModal();
+                loadCalendar();
+            }
+        }
+
         function toggleColorMode() {
             colorMode = !colorMode;
             document.getElementById('colorModeBtn').textContent = colorMode ? '✅ Выбор' : '🎨 Выбрать дни';
             document.getElementById('applyColorBtn').style.display = colorMode ? 'inline-block' : 'none';
             if(!colorMode) { selectedDays.clear(); document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('selected')); }
         }
+
         async function applyColor() {
             if(!selectedDays.size) return alert('Выберите дни');
             await fetch('/set_day_color', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({dates:Array.from(selectedDays), color:document.getElementById('day-color').value})});
             toggleColorMode(); loadCalendar();
         }
+
         async function clearColors() {
             if(!confirm('Очистить все цвета?')) return;
             const dates = [...document.querySelectorAll('.day-cell')].map(c => c.dataset.date).filter(d => d);
             await fetch('/set_day_color', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({dates, color:''})});
             loadCalendar();
         }
+
         function switchTab(t) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -324,14 +477,25 @@
             document.getElementById(`${t}-tab`).classList.add('active');
         }
 
+        // Уведомления
         async function toggleNotifications(e) {
             e.stopPropagation();
             const panel = document.getElementById('notifications-panel');
-            if (panel.style.display === 'none' || !panel.style.display) {
+            if (panel.style.display === 'block') {
+                panel.style.display = 'none';
+            } else {
                 await loadNotifications();
                 panel.style.display = 'block';
-            } else {
-                panel.style.display = 'none';
+            }
+        }
+
+        async function deleteNotification(notificationId, event) {
+            event.stopPropagation();
+            try {
+                await fetch(`/api/notifications/${notificationId}/delete`, { method: 'DELETE' });
+                loadNotifications();
+            } catch(e) {
+                console.error('Ошибка удаления:', e);
             }
         }
 
@@ -345,13 +509,16 @@
 
                 const panel = document.getElementById('notifications-panel');
                 panel.innerHTML = `
-                    <div class="notifications-header"><span>Уведомления</span><button onclick="markAllRead()">Прочитать все</button></div>
+                    <div class="notifications-header"><span>Уведомления</span><button onclick="markAllRead(event)">Прочитать все</button></div>
                     <div class="notifications-list">
                         ${data.notifications.length ? data.notifications.map(n => `
-                            <div class="notification-item ${n.read ? '' : 'unread'}" ${n.link ? `onclick="window.location.href='${n.link}'"` : ''}>
-                                <div class="notification-title">${n.title}</div>
-                                <div class="notification-message">${n.message}</div>
-                                <div class="notification-time">${new Date(n.created_at).toLocaleString('ru')}</div>
+                            <div class="notification-item ${n.read ? '' : 'unread'}">
+                                <button class="notification-delete" onclick="deleteNotification(${n.id}, event)">🗑️</button>
+                                <div class="notification-content" ${n.link ? `onclick="window.location.href='${n.link}'"` : ''}>
+                                    <div class="notification-title">${n.title}</div>
+                                    <div class="notification-message">${n.message}</div>
+                                    <div class="notification-time">${new Date(n.created_at).toLocaleString('ru')}</div>
+                                </div>
                             </div>
                         `).join('') : '<div class="empty-state">Нет уведомлений</div>'}
                     </div>
@@ -359,7 +526,8 @@
             } catch(e) { console.error(e); }
         }
 
-        async function markAllRead() {
+        async function markAllRead(e) {
+            e.stopPropagation();
             await fetch('/api/notifications/read_all', {method:'POST'});
             loadNotifications();
         }

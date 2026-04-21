@@ -8,12 +8,22 @@ import os
 import socket
 import uuid
 
-# Московский часовой пояс (UTC+3)
+# Московский часовой пояс (UTC+3) - используем timezone
 MOSCOW_TZ = timezone(timedelta(hours=3))
 
 
 def moscow_now():
+    """Возвращает текущее время в московском часовом поясе"""
     return datetime.now(MOSCOW_TZ)
+
+
+def make_aware(dt):
+    """Делает datetime объект aware (с часовым поясом)"""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=MOSCOW_TZ)
+    return dt
 
 
 app = Flask(__name__)
@@ -46,6 +56,7 @@ class User(UserMixin, db.Model):
     birth_date = db.Column(db.String(10))
     avatar = db.Column(db.String(200), default='default.png')
     created_at = db.Column(db.DateTime, default=moscow_now)
+    last_seen = db.Column(db.DateTime, default=moscow_now)
 
     sent_requests = db.relationship('FriendRequest', foreign_keys='FriendRequest.from_user_id', backref='from_user',
                                     lazy='dynamic', cascade='all, delete-orphan')
@@ -55,6 +66,9 @@ class User(UserMixin, db.Model):
     day_colors = db.relationship('DayColor', backref='user', lazy=True, cascade='all, delete-orphan')
     events = db.relationship('Event', backref='user', lazy=True, cascade='all, delete-orphan')
     notifications = db.relationship('Notification', backref='user', lazy=True, cascade='all, delete-orphan')
+    sent_messages = db.relationship('Message', foreign_keys='Message.sender_id', backref='sender', lazy='dynamic')
+    received_messages = db.relationship('Message', foreign_keys='Message.receiver_id', backref='receiver',
+                                        lazy='dynamic')
 
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -84,6 +98,17 @@ class User(UserMixin, db.Model):
     def get_pending_requests(self):
         return FriendRequest.query.filter_by(to_user_id=self.id, status='pending').all()
 
+    def update_last_seen(self):
+        self.last_seen = moscow_now()
+        db.session.commit()
+
+    def is_online(self):
+        if not self.last_seen:
+            return False
+        last_seen_aware = make_aware(self.last_seen)
+        now = moscow_now()
+        return (now - last_seen_aware).total_seconds() < 300
+
 
 class FriendRequest(db.Model):
     __tablename__ = 'friend_requests'
@@ -91,6 +116,16 @@ class FriendRequest(db.Model):
     from_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     to_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     status = db.Column(db.String(20), default='pending')
+    created_at = db.Column(db.DateTime, default=moscow_now)
+
+
+class Message(db.Model):
+    __tablename__ = 'messages'
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    text = db.Column(db.Text, nullable=False)
+    read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=moscow_now)
 
 
@@ -143,7 +178,6 @@ class SharedEvent(db.Model):
     event_id = db.Column(db.Integer, db.ForeignKey('events.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=moscow_now)
-
     event = db.relationship('Event', backref='shared_with')
 
 
@@ -190,6 +224,7 @@ def index():
     if not current_user.is_authenticated:
         return redirect(url_for('login'))
     now = moscow_now()
+    current_user.update_last_seen()
     return render_template('index.html',
                            current_year=now.year,
                            current_month=now.month,
@@ -233,6 +268,7 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
             login_user(user, remember=data.get('remember', False))
+            user.update_last_seen()
             return jsonify({'success': True, 'theme': user.theme})
         return jsonify({'success': False, 'error': 'Неверное имя пользователя или пароль'}), 401
     return render_template('login.html')
@@ -283,6 +319,8 @@ def update_theme():
 def friends_page():
     return render_template('friends.html', user=current_user)
 
+
+# ============ API ДРУЗЕЙ ============
 
 @app.route('/api/friends/search')
 @login_required
@@ -368,7 +406,12 @@ def api_remove_friend():
 @login_required
 def api_friends_list():
     friends = current_user.get_friends()
-    return jsonify([{'id': f.id, 'username': f.username, 'avatar': f.get_avatar_url()} for f in friends])
+    return jsonify([{
+        'id': f.id,
+        'username': f.username,
+        'avatar': f.get_avatar_url(),
+        'online': f.is_online()
+    } for f in friends])
 
 
 @app.route('/api/friends/requests')
@@ -380,24 +423,73 @@ def api_friend_requests():
                      'created_at': r.created_at.isoformat()} for r in requests])
 
 
-@app.route('/api/notifications')
-@login_required
-def api_notifications():
-    notifications = Notification.query.filter_by(user_id=current_user.id).order_by(
-        Notification.created_at.desc()).limit(50).all()
-    unread = Notification.query.filter_by(user_id=current_user.id, read=False).count()
-    return jsonify({'notifications': [
-        {'id': n.id, 'type': n.type, 'title': n.title, 'message': n.message, 'link': n.link, 'read': n.read,
-         'created_at': n.created_at.isoformat()} for n in notifications], 'unread_count': unread})
+# ============ API ЧАТА ============
 
-
-@app.route('/api/notifications/read_all', methods=['POST'])
+@app.route('/api/messages/<int:friend_id>')
 @login_required
-def api_mark_all_read():
-    Notification.query.filter_by(user_id=current_user.id, read=False).update({'read': True})
+def api_get_messages(friend_id):
+    if not current_user.is_friend(friend_id):
+        return jsonify({'error': 'Не друг'}), 403
+
+    messages = Message.query.filter(
+        ((Message.sender_id == current_user.id) & (Message.receiver_id == friend_id)) |
+        ((Message.sender_id == friend_id) & (Message.receiver_id == current_user.id))
+    ).order_by(Message.created_at.asc()).limit(100).all()
+
+    Message.query.filter_by(sender_id=friend_id, receiver_id=current_user.id, read=False).update({'read': True})
     db.session.commit()
-    return jsonify({'success': True})
 
+    return jsonify([{
+        'id': m.id,
+        'sender_id': m.sender_id,
+        'text': m.text,
+        'read': m.read,
+        'created_at': m.created_at.isoformat()
+    } for m in messages])
+
+
+@app.route('/api/messages/send', methods=['POST'])
+@login_required
+def api_send_message():
+    data = request.json
+    friend_id = data.get('friend_id')
+    text = data.get('text', '').strip()
+
+    if not text or not friend_id:
+        return jsonify({'success': False, 'error': 'Пустое сообщение'}), 400
+
+    if not current_user.is_friend(friend_id):
+        return jsonify({'success': False, 'error': 'Не друг'}), 403
+
+    msg = Message(sender_id=current_user.id, receiver_id=friend_id, text=text)
+    db.session.add(msg)
+    db.session.commit()
+
+    create_notification(
+        friend_id, 'new_message', 'Новое сообщение',
+        f'{current_user.username}: {text[:50]}...',
+        f'/friends?chat={current_user.id}'
+    )
+
+    return jsonify({'success': True, 'message': {
+        'id': msg.id,
+        'sender_id': msg.sender_id,
+        'text': msg.text,
+        'created_at': msg.created_at.isoformat()
+    }})
+
+
+@app.route('/api/messages/unread')
+@login_required
+def api_unread_messages():
+    unread = db.session.query(Message.sender_id, db.func.count(Message.id).label('count')) \
+        .filter_by(receiver_id=current_user.id, read=False) \
+        .group_by(Message.sender_id).all()
+
+    return jsonify({str(u[0]): u[1] for u in unread})
+
+
+# ============ КАЛЕНДАРЬ ============
 
 @app.route('/get_calendar/<int:year>/<int:month>')
 @login_required
@@ -508,7 +600,6 @@ def save_event():
         db.session.add(event)
         db.session.flush()
 
-    # Обработка общих событий
     if is_shared:
         SharedEvent.query.filter_by(event_id=event.id).delete()
         for friend_id in shared_with:
@@ -518,7 +609,7 @@ def save_event():
                 create_notification(
                     friend_id, 'shared_event', 'Совместное событие',
                     f'{current_user.username} создал совместное событие "{event.title}" на {event.date}',
-                    f'/calendar?date={event.date}'
+                    f'/?date={event.date}'
                 )
 
     db.session.commit()
@@ -579,14 +670,33 @@ def set_day_color():
     return jsonify({'success': True})
 
 
-@app.route('/calendar')
+@app.route('/api/notifications')
 @login_required
-def calendar_redirect():
-    date = request.args.get('date')
-    if date:
-        year, month, day = date.split('-')
-        return redirect(url_for('index', year=year, month=month))
-    return redirect(url_for('index'))
+def api_notifications():
+    notifications = Notification.query.filter_by(user_id=current_user.id).order_by(
+        Notification.created_at.desc()).limit(50).all()
+    unread = Notification.query.filter_by(user_id=current_user.id, read=False).count()
+    return jsonify({'notifications': [
+        {'id': n.id, 'type': n.type, 'title': n.title, 'message': n.message, 'link': n.link, 'read': n.read,
+         'created_at': n.created_at.isoformat()} for n in notifications], 'unread_count': unread})
+
+
+@app.route('/api/notifications/read_all', methods=['POST'])
+@login_required
+def api_mark_all_read():
+    Notification.query.filter_by(user_id=current_user.id, read=False).update({'read': True})
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/notifications/<int:notification_id>/delete', methods=['DELETE'])
+@login_required
+def api_delete_notification(notification_id):
+    notification = db.session.get(Notification, notification_id)
+    if notification and notification.user_id == current_user.id:
+        db.session.delete(notification)
+        db.session.commit()
+        return jsonify({'success': True})
+    return jsonify({'error': 'Не найдено'}), 404
 
 
 def get_local_ip():

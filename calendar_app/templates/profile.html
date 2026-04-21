@@ -3,150 +3,454 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Профиль</title>
+    <title>Профиль - Календарь</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            max-width: 500px;
+        .profile-wrapper {
+            max-width: 480px;
             margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
         }
-        h1 { text-align: center; margin-bottom: 30px; color: #2d3748; }
+
+        .profile-container {
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            gap: 15px;
+        }
+
+        .profile-header .back-btn {
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--surface);
+            color: var(--text);
+            border: 2px solid var(--border);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+
+        .profile-header .back-btn:hover {
+            border-color: var(--primary);
+            background: var(--hover);
+            transform: translateY(-1px);
+        }
+
+        .profile-container h2 {
+            color: var(--text);
+            margin: 0;
+            font-size: 1.5rem;
+            flex: 1;
+            text-align: center;
+        }
+
         .avatar-section {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
+
         .avatar-preview {
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid #667eea;
-            margin-bottom: 15px;
+            border: 3px solid var(--primary);
+            margin-bottom: 12px;
+            background: var(--hover);
         }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; color: #4a5568; }
-        input, select {
+
+        .avatar-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 4px;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .form-input {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1rem;
+            padding: 12px 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            background: var(--surface);
+            color: var(--text);
+            transition: all 0.3s;
         }
-        button {
-            padding: 12px 24px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-input:disabled {
+            background: var(--hover);
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        select.form-input {
             cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 14px;
+            padding-right: 40px;
         }
-        .btn-outline {
-            background: transparent;
-            color: #667eea;
-            border: 2px solid #667eea;
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
         }
-        .button-group { display: flex; gap: 10px; margin-top: 30px; }
-        .button-group button, .button-group a { flex: 1; text-align: center; text-decoration: none; }
-        .back-link { display: block; margin-bottom: 20px; color: #667eea; text-decoration: none; }
-        .version-badge {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            color: rgba(255,255,255,0.7);
-            font-size: 0.8rem;
+
+        .button-group .btn {
+            flex: 1;
+            text-align: center;
+            text-decoration: none;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            justify-content: center;
+        }
+
+        /* Модальное окно обрезки */
+        .crop-modal-content {
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .crop-container {
+            margin-bottom: 20px;
+            max-height: 350px;
+            overflow: hidden;
+            background: #000;
+            border-radius: 12px;
+        }
+
+        .crop-container img {
+            max-width: 100%;
+            max-height: 350px;
+        }
+
+        .crop-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .crop-controls .btn {
+            flex: 1;
+            max-width: 180px;
+        }
+
+        .cropper-view-box,
+        .cropper-face {
+            border-radius: 50%;
+        }
+
+        @media (max-width: 500px) {
+            .profile-container {
+                padding: 20px 15px;
+            }
+
+            .avatar-preview {
+                width: 90px;
+                height: 90px;
+            }
+
+            .profile-header {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .profile-header .back-btn {
+                order: -1;
+                width: 100%;
+                justify-content: center;
+            }
+
+            .profile-container h2 {
+                text-align: center;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <a href="/" class="back-link">← Назад</a>
-        <h1>Профиль</h1>
+    <div class="app">
+        <div class="version-badge">v2.5-release</div>
 
-        <div class="avatar-section">
-            <img src="{{ user.get_avatar_url() }}" alt="Аватар" id="avatar-preview" class="avatar-preview">
-            <label for="avatar-upload">
-                <span style="padding:8px 16px;background:#e2e8f0;border-radius:8px;cursor:pointer;">📸 Выбрать фото</span>
-            </label>
-            <input type="file" id="avatar-upload" accept="image/*" style="display:none;" onchange="uploadAvatar(event)">
-        </div>
+        <header class="app-header" style="padding: 12px 20px;">
+            <div class="header-top" style="margin-bottom: 0;">
+                <h1 style="font-size: 1.5rem;">📅 Календарь</h1>
+                <div class="user-controls">
+                    <a href="{{ url_for('profile') }}" class="profile-link">
+                        <img src="{{ user.get_avatar_url() }}" alt="{{ user.username }}" class="user-avatar">
+                        <span class="user-name">{{ user.username }}</span>
+                    </a>
+                    <button class="theme-toggle icon-link" onclick="toggleTheme()">🌙</button>
+                    <button class="logout-btn icon-link" onclick="logout()">🚪</button>
+                </div>
+            </div>
+        </header>
 
-        <form onsubmit="saveProfile(event)">
-            <div class="form-group">
-                <label>Имя пользователя</label>
-                <input type="text" value="{{ user.username }}" disabled>
-            </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" value="{{ user.email }}" disabled>
-            </div>
-            <div class="form-group">
-                <label>Пол</label>
-                <select id="gender">
-                    <option value="male" {% if user.gender == 'male' %}selected{% endif %}>👨 Мужской</option>
-                    <option value="female" {% if user.gender == 'female' %}selected{% endif %}>👩 Женский</option>
-                    <option value="other" {% if user.gender == 'other' %}selected{% endif %}>🌟 Другой</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Дата рождения</label>
-                <input type="date" id="birth_date" value="{{ user.birth_date if user.birth_date else '' }}">
-            </div>
+        <main class="calendar-main" style="padding:20px;">
+            <div class="profile-wrapper">
+                <div class="profile-container">
+                    <div class="profile-header">
+                        <a href="{{ url_for('index') }}" class="back-btn">← Назад</a>
+                        <h2>Настройки профиля</h2>
+                    </div>
 
-            <div class="button-group">
-                <button type="submit">💾 Сохранить</button>
-                <a href="/" class="btn-outline">Отмена</a>
+                    <div class="avatar-section">
+                        <img src="{{ user.get_avatar_url() }}" alt="Аватар" id="avatar-preview" class="avatar-preview">
+                        <div class="avatar-controls">
+                            <label for="avatar-upload" class="btn btn-secondary" style="padding: 8px 16px;">📸 Выбрать фото</label>
+                            <input type="file" id="avatar-upload" accept="image/jpeg,image/png,image/gif" style="display: none;" onchange="handleFileSelect(event)">
+                        </div>
+                    </div>
+
+                    <form id="profile-form" onsubmit="saveProfile(event)">
+                        <div class="form-group">
+                            <label>Имя пользователя</label>
+                            <input type="text" value="{{ user.username }}" disabled class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" value="{{ user.email }}" disabled class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Пол</label>
+                            <select id="gender" name="gender" class="form-input">
+                                <option value="male" {% if user.gender == 'male' %}selected{% endif %}>👨 Мужской</option>
+                                <option value="female" {% if user.gender == 'female' %}selected{% endif %}>👩 Женский</option>
+                                <option value="other" {% if user.gender == 'other' %}selected{% endif %}>🌟 Другой</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Дата рождения</label>
+                            <input type="date" id="birth-date" name="birth_date" value="{{ user.birth_date if user.birth_date else '' }}" class="form-input">
+                            <small>🎂 В этот день будет отображаться праздник "День рождения"</small>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">💾 Сохранить</button>
+                            <a href="{{ url_for('index') }}" class="btn btn-outline">Отмена</a>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </form>
+        </main>
     </div>
-    <div class="version-badge">v2.0-release</div>
 
+    <!-- Модальное окно для обрезки -->
+    <div id="crop-modal" class="modal">
+        <div class="modal-content crop-modal-content">
+            <div class="modal-header">
+                <h3>Обрежьте фото</h3>
+                <button class="modal-close" onclick="closeCropModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="crop-container">
+                    <img id="crop-image" style="max-width: 100%; display: block;">
+                </div>
+                <div class="crop-controls">
+                    <button type="button" class="btn btn-secondary" onclick="rotateImage(-90)">↪️ Повернуть</button>
+                    <button type="button" class="btn btn-primary" onclick="cropImage()">✂️ Обрезать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script>
-        async function uploadAvatar(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        let currentTheme = localStorage.getItem('theme') || '{{ user.theme }}' || 'light';
+        let cropper = null;
 
-            const formData = new FormData();
-            formData.append('avatar', file);
-
-            const resp = await fetch('/profile', { method: 'POST', body: formData });
-            const data = await resp.json();
-
-            if (data.success) {
-                document.getElementById('avatar-preview').src = data.avatar + '?t=' + Date.now();
-            }
+        function loadTheme() {
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            const themeBtn = document.querySelector('.theme-toggle');
+            if (themeBtn) themeBtn.textContent = currentTheme === 'light' ? '🌙' : '☀️';
         }
 
-        async function saveProfile(e) {
-            e.preventDefault();
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('theme', currentTheme);
+            loadTheme();
 
-            const resp = await fetch('/profile', {
+            fetch('/update_theme', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    gender: document.getElementById('gender').value,
-                    birth_date: document.getElementById('birth_date').value || null
-                })
+                body: JSON.stringify({theme: currentTheme})
             });
+        }
 
-            const data = await resp.json();
-            if (data.success) {
-                alert('Сохранено!');
-                window.location.href = '/';
+        function logout() {
+            if (confirm('Выйти из аккаунта?')) {
+                window.location.href = '/logout';
             }
         }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Файл слишком большой. Максимальный размер 5MB');
+                return;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                alert('Пожалуйста, выберите изображение');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const cropImage = document.getElementById('crop-image');
+                cropImage.src = e.target.result;
+
+                document.getElementById('crop-modal').style.display = 'block';
+
+                if (cropper) cropper.destroy();
+
+                cropper = new Cropper(cropImage, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    dragMode: 'move',
+                    autoCropArea: 1,
+                    restore: false,
+                    guides: true,
+                    center: true,
+                    highlight: true,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    toggleDragModeOnDblclick: false,
+                    background: false
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function closeCropModal() {
+            document.getElementById('crop-modal').style.display = 'none';
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            document.getElementById('avatar-upload').value = '';
+        }
+
+        function rotateImage(degree) {
+            if (cropper) cropper.rotate(degree);
+        }
+
+        async function cropImage() {
+            if (!cropper) return;
+
+            try {
+                const canvas = cropper.getCroppedCanvas({
+                    width: 300,
+                    height: 300,
+                    imageSmoothingEnabled: true,
+                    imageSmoothingQuality: 'high'
+                });
+
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+
+                const formData = new FormData();
+                formData.append('avatar', blob, 'avatar.jpg');
+
+                const response = await fetch('/profile', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('avatar-preview').src = data.avatar + '?t=' + new Date().getTime();
+                    closeCropModal();
+                } else {
+                    alert('Ошибка загрузки аватара');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка обработки изображения');
+            }
+        }
+
+        async function saveProfile(event) {
+            event.preventDefault();
+
+            const data = {
+                gender: document.getElementById('gender').value,
+                birth_date: document.getElementById('birth-date').value || null
+            };
+
+            try {
+                const response = await fetch('/profile', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('✅ Профиль сохранен!');
+                    window.location.href = '/';
+                } else {
+                    alert('❌ Ошибка сохранения');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('❌ Ошибка сохранения');
+            }
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('crop-modal');
+            if (event.target === modal) {
+                closeCropModal();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadTheme);
     </script>
 </body>
 </html>

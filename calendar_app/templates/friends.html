@@ -3,14 +3,410 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Друзья - Календарь</title>
+    <title>Друзья</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        .friends-page-container {
+            display: flex;
+            gap: 15px;
+            height: 100%;
+            width: 100%;
+        }
+
+        .friends-left-panel {
+            width: 290px;
+            flex-shrink: 0;
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 18px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-right-panel {
+            flex: 1;
+            min-width: 0;
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 18px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .friends-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 8px;
+        }
+
+        .friends-header .back-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--surface);
+            color: var(--text);
+            border: 2px solid var(--border);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .friends-header .back-btn:hover {
+            border-color: var(--primary);
+            background: var(--hover);
+        }
+
+        .friends-header h2 {
+            color: var(--text);
+            margin: 0;
+            font-size: 1.2rem;
+            flex: 1;
+        }
+
+        .search-area {
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .search-area input {
+            width: 100%;
+            padding: 9px 12px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            background: var(--surface);
+            color: var(--text);
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 100;
+            margin-top: 5px;
+            box-shadow: var(--shadow);
+            display: none;
+        }
+
+        .tabs-container {
+            display: flex;
+            gap: 3px;
+            margin-bottom: 12px;
+            background: var(--hover);
+            padding: 4px;
+            border-radius: 10px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 8px;
+            background: transparent;
+            border: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 8px;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .badge {
+            background: var(--holiday);
+            color: white;
+            border-radius: 20px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            margin-left: 5px;
+        }
+
+        .friends-list, .requests-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .friend-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            background: var(--hover);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .friend-card:hover {
+            border-color: var(--primary);
+            background: var(--border);
+        }
+
+        .friend-card.active {
+            border-color: var(--primary);
+            background: rgba(102, 126, 234, 0.15);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+            flex: 1;
+        }
+
+        .user-avatar-small {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary);
+            flex-shrink: 0;
+        }
+
+        .online-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #48bb78;
+            margin-left: 4px;
+            flex-shrink: 0;
+            display: inline-block;
+            border: 2px solid var(--surface);
+        }
+
+        .unread-badge {
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 5px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 12px;
+            flex-shrink: 0;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 10px;
+            min-height: 0;
+        }
+
+        .message {
+            display: flex;
+            gap: 10px;
+            max-width: 70%;
+        }
+
+        .message.sent {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            background: var(--hover);
+            padding: 10px 14px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            word-break: break-word;
+        }
+
+        .message.sent .message-content {
+            background: var(--primary);
+            color: white;
+            border: none;
+        }
+
+        .message-text {
+            word-break: break-word;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .message-time {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .message.sent .message-time {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* ===== ПОЛЕ ВВОДА ===== */
+        .chat-input-container {
+            flex-shrink: 0;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .message-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: var(--hover);
+            border-radius: 24px;
+            padding: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .message-input-field {
+            flex: 1;
+            padding: 8px 8px 8px 14px;
+            border: none;
+            background: transparent;
+            font-size: 0.9rem;
+            color: var(--text);
+            outline: none;
+            font-family: inherit;
+            resize: none;
+            min-height: 36px;
+            max-height: 100px;
+            line-height: 1.4;
+            overflow-y: auto;
+        }
+
+        .message-input-field::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .message-send-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .message-send-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .empty-chat {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 60px 20px;
+            font-size: 1rem;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            background: var(--border);
+            color: var(--text-secondary);
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+        }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 4px 6px;
+            border-radius: 6px;
+            color: var(--text);
+        }
+
+        .btn-icon:hover {
+            background: var(--border);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 30px;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 768px) {
+            .friends-page-container {
+                flex-direction: column;
+            }
+
+            .friends-left-panel {
+                width: 100%;
+                max-height: 300px;
+            }
+
+            .chat-right-panel {
+                min-height: 450px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="app">
-        <header class="app-header">
-            <div class="header-top">
-                <h1>📅 Календарь</h1>
+        <header class="app-header" style="padding: 12px 20px;">
+            <div class="header-top" style="margin-bottom: 0;">
+                <h1 style="font-size: 1.5rem;">📅 Календарь</h1>
                 <div class="user-controls">
                     <a href="{{ url_for('profile') }}" class="profile-link">
                         <img src="{{ user.get_avatar_url() }}" alt="{{ user.username }}" class="user-avatar">
@@ -21,34 +417,54 @@
             </div>
         </header>
 
-        <main class="calendar-main" style="padding:25px;">
-            <a href="{{ url_for('index') }}" class="back-link">← Назад к календарю</a>
+        <main class="calendar-main" style="padding:20px;">
+            <div class="friends-page-container">
+                <div class="friends-left-panel">
+                    <div class="friends-header">
+                        <a href="{{ url_for('index') }}" class="back-btn">← Назад</a>
+                        <h2>👥 Друзья</h2>
+                    </div>
 
-            <div class="friends-page">
-                <h1>👥 Друзья</h1>
+                    <div class="search-area">
+                        <input type="text" id="searchInput" placeholder="🔍 Поиск...">
+                        <div id="searchResults" class="search-results"></div>
+                    </div>
 
-                <div class="search-area">
-                    <input type="text" id="searchInput" placeholder="🔍 Поиск пользователей...">
-                    <div id="searchResults" class="search-results"></div>
-                </div>
+                    <div class="tabs-container">
+                        <button class="tab active" onclick="switchTab('friends')">Друзья</button>
+                        <button class="tab" onclick="switchTab('requests')">
+                            Заявки
+                            <span id="requestsBadge" class="badge">0</span>
+                        </button>
+                    </div>
 
-                <div class="tabs-container">
-                    <button class="tab active" onclick="switchTab('friends')">Мои друзья</button>
-                    <button class="tab" onclick="switchTab('requests')">
-                        Заявки
-                        <span id="requestsBadge" class="badge">0</span>
-                    </button>
-                </div>
+                    <div id="friendsTab">
+                        <div id="friendsList" class="friends-list">
+                            <div class="empty-state">Загрузка...</div>
+                        </div>
+                    </div>
 
-                <div id="friendsTab">
-                    <div id="friendsList" class="friends-list">
-                        <div class="empty-state">Загрузка...</div>
+                    <div id="requestsTab" style="display:none;">
+                        <div id="requestsList" class="requests-list">
+                            <div class="empty-state">Загрузка...</div>
+                        </div>
                     </div>
                 </div>
 
-                <div id="requestsTab" style="display:none;">
-                    <div id="requestsList" class="requests-list">
-                        <div class="empty-state">Загрузка...</div>
+                <div class="chat-right-panel">
+                    <div id="chatHeader" class="chat-header">
+                        <h3>💬 Чат</h3>
+                        <span id="chatStatus"></span>
+                    </div>
+                    <div id="chatMessages" class="chat-messages">
+                        <div class="empty-chat">Выберите друга для начала чата</div>
+                    </div>
+
+                    <div class="chat-input-container">
+                        <div id="chatInputArea" class="message-input-wrapper" style="display: none;">
+                            <textarea id="chatInput" class="message-input-field" placeholder="Сообщение..." rows="1" onkeydown="handleChatKeyDown(event)"></textarea>
+                            <button class="message-send-btn" onclick="sendMessage()">➤</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -56,8 +472,12 @@
     </div>
 
     <script>
-        let searchTimeout = null;
         let currentTheme = localStorage.getItem('theme') || '{{ user.theme }}' || 'light';
+        let searchTimeout = null;
+        let selectedFriend = null;
+        let messages = [];
+        let unreadCounts = {};
+        let messagePollInterval = null;
 
         function loadTheme() {
             document.documentElement.setAttribute('data-theme', currentTheme);
@@ -89,9 +509,9 @@
             const users = await res.json();
             const div = document.getElementById('searchResults');
             div.innerHTML = users.length ? users.map(u => `
-                <div class="search-item">
+                <div class="search-item" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);">
                     <div class="user-info">
-                        <img src="${u.avatar}" class="user-avatar">
+                        <img src="${u.avatar}" class="user-avatar-small">
                         <span>${u.username}</span>
                     </div>
                     <div>${getActionButton(u)}</div>
@@ -103,43 +523,62 @@
         function getActionButton(u) {
             if (u.is_friend) return '<span class="status-badge">✓ Друг</span>';
             if (u.pending_sent) return '<span class="status-badge">⏳ Заявка отправлена</span>';
-            if (u.pending_received) return `<button class="btn btn-success" onclick="respondRequest(${u.id}, 'accept')">Принять</button>`;
-            return `<button class="btn btn-primary" onclick="sendRequest(${u.id})">Добавить</button>`;
+            if (u.pending_received) return `<button class="btn btn-success btn-small" onclick="respondRequest(${u.id}, 'accept')">Принять</button>`;
+            return `<button class="btn btn-primary btn-small" onclick="sendRequest(${u.id})">Добавить</button>`;
         }
 
         async function sendRequest(id) {
             const res = await fetch('/api/friends/send_request', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({friend_id:id})});
             const data = await res.json();
-            if (data.success) { alert(data.message || 'Заявка отправлена'); document.getElementById('searchInput').value = ''; document.getElementById('searchResults').style.display = 'none'; loadFriends(); loadRequests(); }
-            else alert('Ошибка: ' + data.error);
+            if (data.success) {
+                alert(data.message || 'Заявка отправлена');
+                document.getElementById('searchInput').value = '';
+                document.getElementById('searchResults').style.display = 'none';
+                loadFriends();
+                loadRequests();
+            } else alert('Ошибка: ' + data.error);
         }
 
         async function respondRequest(id, action) {
             await fetch('/api/friends/respond', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({from_user_id:id, action})});
-            loadFriends(); loadRequests();
+            loadFriends();
+            loadRequests();
         }
 
         async function removeFriend(id) {
             if (!confirm('Удалить из друзей?')) return;
             await fetch('/api/friends/remove', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({friend_id:id})});
+            if (selectedFriend?.id === id) {
+                selectedFriend = null;
+                updateChatUI();
+            }
             loadFriends();
         }
 
         async function loadFriends() {
-            const res = await fetch('/api/friends/list');
-            const friends = await res.json();
-            const div = document.getElementById('friendsList');
-            div.innerHTML = friends.length ? friends.map(f => `
-                <div class="friend-card">
-                    <div class="user-info">
-                        <img src="${f.avatar}" class="user-avatar">
-                        <span>${f.username}</span>
+            try {
+                const res = await fetch('/api/friends/list');
+                const friends = await res.json();
+                const unreadRes = await fetch('/api/messages/unread');
+                unreadCounts = await unreadRes.json();
+
+                const div = document.getElementById('friendsList');
+                div.innerHTML = friends.length ? friends.map(f => `
+                    <div class="friend-card ${selectedFriend?.id === f.id ? 'active' : ''}" onclick="selectFriend(${f.id}, '${f.username}', '${f.avatar}', ${f.online})">
+                        <div class="user-info">
+                            <img src="${f.avatar}" class="user-avatar-small">
+                            <span>${f.username}</span>
+                            ${f.online ? '<span class="online-indicator" title="Онлайн"></span>' : ''}
+                        </div>
+                        <div class="actions" style="display:flex;gap:4px;align-items:center;">
+                            ${unreadCounts[f.id] ? `<span class="unread-badge">${unreadCounts[f.id]}</span>` : ''}
+                            <button class="btn-icon" onclick="event.stopPropagation();removeFriend(${f.id})" title="Удалить">🗑️</button>
+                        </div>
                     </div>
-                    <div class="actions">
-                        <button class="btn btn-outline" onclick="removeFriend(${f.id})">Удалить</button>
-                    </div>
-                </div>
-            `).join('') : '<div class="empty-state">У вас пока нет друзей</div>';
+                `).join('') : '<div class="empty-state">У вас пока нет друзей</div>';
+            } catch (e) {
+                console.error('Ошибка загрузки друзей:', e);
+            }
         }
 
         async function loadRequests() {
@@ -151,26 +590,168 @@
             div.innerHTML = requests.length ? requests.map(r => `
                 <div class="friend-card">
                     <div class="user-info">
-                        <img src="${r.user.avatar}" class="user-avatar">
+                        <img src="${r.user.avatar}" class="user-avatar-small">
                         <span>${r.user.username}</span>
                     </div>
-                    <div class="actions">
-                        <button class="btn btn-success" onclick="respondRequest(${r.user.id}, 'accept')">Принять</button>
-                        <button class="btn btn-danger" onclick="respondRequest(${r.user.id}, 'reject')">Отклонить</button>
+                    <div class="actions" style="display:flex;gap:4px;">
+                        <button class="btn btn-success btn-small" onclick="respondRequest(${r.user.id}, 'accept')">✓</button>
+                        <button class="btn btn-danger btn-small" onclick="respondRequest(${r.user.id}, 'reject')">✗</button>
                     </div>
                 </div>
             `).join('') : '<div class="empty-state">Нет входящих заявок</div>';
         }
 
-        document.addEventListener('click', (e) => { if (!e.target.closest('.search-area')) document.getElementById('searchResults').style.display = 'none'; });
+        async function selectFriend(id, username, avatar, online) {
+            selectedFriend = { id, username, avatar, online };
+            updateChatUI();
+            await loadMessages();
+
+            document.querySelectorAll('.friend-card').forEach(card => card.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        function updateChatUI() {
+            const header = document.getElementById('chatHeader');
+            const inputArea = document.getElementById('chatInputArea');
+            const messagesDiv = document.getElementById('chatMessages');
+
+            if (selectedFriend) {
+                header.innerHTML = `
+                    <img src="${selectedFriend.avatar}" class="user-avatar-small">
+                    <h3>${selectedFriend.username}</h3>
+                    <span id="chatStatus">${selectedFriend.online ? '🟢 Онлайн' : '⚫ Офлайн'}</span>
+                `;
+                inputArea.style.display = 'flex';
+                if (!messages.length) {
+                    messagesDiv.innerHTML = '<div class="empty-chat">Начните общение!</div>';
+                }
+            } else {
+                header.innerHTML = '<h3>💬 Чат</h3><span id="chatStatus"></span>';
+                inputArea.style.display = 'none';
+                messagesDiv.innerHTML = '<div class="empty-chat">Выберите друга для начала чата</div>';
+            }
+        }
+
+        async function loadMessages() {
+            if (!selectedFriend) return;
+
+            try {
+                const res = await fetch(`/api/messages/${selectedFriend.id}`);
+                messages = await res.json();
+                renderMessages();
+                loadFriends();
+            } catch (e) {
+                console.error('Ошибка загрузки сообщений:', e);
+            }
+        }
+
+        function renderMessages() {
+            const div = document.getElementById('chatMessages');
+            if (messages.length === 0) {
+                div.innerHTML = '<div class="empty-chat">Начните общение!</div>';
+                return;
+            }
+
+            div.innerHTML = messages.map(m => {
+                const isSent = m.sender_id === {{ user.id }};
+                const time = new Date(m.created_at).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+                return `
+                    <div class="message ${isSent ? 'sent' : ''}">
+                        <img src="${isSent ? '{{ user.get_avatar_url() }}' : selectedFriend.avatar}" class="message-avatar">
+                        <div class="message-content">
+                            <div class="message-text">${escapeHtml(m.text)}</div>
+                            <div class="message-time">${time} ${isSent ? (m.read ? '✓✓' : '✓') : ''}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            div.scrollTop = div.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+
+            if (!text || !selectedFriend) return;
+
+            try {
+                const res = await fetch('/api/messages/send', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ friend_id: selectedFriend.id, text })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    input.value = '';
+                    input.style.height = '36px';
+                    messages.push(data.message);
+                    renderMessages();
+                }
+            } catch (e) {
+                console.error('Ошибка отправки:', e);
+            }
+        }
+
+        function handleChatKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function autoResizeTextarea() {
+            const textarea = document.getElementById('chatInput');
+            if (textarea) {
+                textarea.addEventListener('input', function() {
+                    this.style.height = '36px';
+                    const newHeight = Math.min(this.scrollHeight, 100);
+                    this.style.height = newHeight + 'px';
+                });
+            }
+        }
+
+        async function pollMessages() {
+            if (selectedFriend) {
+                await loadMessages();
+            }
+            await fetch('/api/friends/list');
+            await loadFriends();
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-area')) {
+                document.getElementById('searchResults').style.display = 'none';
+            }
+        });
 
         document.addEventListener('DOMContentLoaded', () => {
             loadTheme();
             loadFriends();
             loadRequests();
+            autoResizeTextarea();
+
             const input = document.getElementById('searchInput');
-            input.addEventListener('input', (e) => { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => searchUsers(e.target.value), 300); });
-            input.addEventListener('focus', () => { if (input.value.length >= 2) searchUsers(input.value); });
+            input.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => searchUsers(e.target.value), 300);
+            });
+            input.addEventListener('focus', () => {
+                if (input.value.length >= 2) searchUsers(input.value);
+            });
+
+            messagePollInterval = setInterval(pollMessages, 5000);
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (messagePollInterval) clearInterval(messagePollInterval);
         });
     </script>
 </body>
