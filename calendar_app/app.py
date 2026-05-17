@@ -777,7 +777,6 @@ if __name__=='__main__':
     with app.app_context():
         db.create_all()
         create_default_avatar()
-        create_favicon()
         print("База создана")
     ip=get_local_ip()
     print(f"\nhttp://{ip}:5000\n")
