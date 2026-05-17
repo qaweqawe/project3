@@ -284,7 +284,9 @@ def register():
         if User.query.filter_by(username=u).first(): return jsonify({'success':False,'error':'Пользователь существует'}),400
         if User.query.filter_by(email=e).first(): return jsonify({'success':False,'error':'Email занят'}),400
         user = User(username=u, email=e, gender=data.get('gender','other'), birth_date=data.get('birth_date'))
-        user.set_password(p); db.session.add(user); db.session.commit()
+        user.set_password(p)
+        db.session.add(user)
+        db.session.commit()
         login_user(user)
         return jsonify({'success':True,'theme':user.theme})
     return render_template('register.html')
@@ -298,7 +300,6 @@ def login():
         user = User.query.filter_by(username=u).first()
         if user and user.check_password(p):
             login_user(user, remember=data.get('remember',False))
-            user.last_seen = moscow_now(); db.session.commit()
             return jsonify({'success':True,'theme':user.theme})
         return jsonify({'success':False,'error':'Неверный логин или пароль'}),401
     return render_template('login.html')
@@ -773,11 +774,10 @@ def create_default_avatar():
                 img.save(path)
             except: pass
 
+
 if __name__=='__main__':
     with app.app_context():
         db.create_all()
         create_default_avatar()
         print("База создана")
-    ip=get_local_ip()
-    print(f"\nhttp://{ip}:5000\n")
     app.run(debug=True,host='0.0.0.0',port=5000)

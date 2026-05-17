@@ -109,7 +109,7 @@
 </head>
 <body>
     <div class="app">
-        <div class="version-badge">v3.0</div>
+        <div class="version-badge">v3.1</div>
         <header class="app-header" style="padding: 10px 20px;">
             <div class="header-top" style="margin-bottom: 8px;">
                 <h1 style="font-size: 1.5rem;">📅 Календарь</h1>
@@ -142,7 +142,7 @@
         <div class="form-group"><label>Категория</label><div class="category-grid" id="category-grid">{% for key, cat in event_categories.items() %}<div class="cat-option" data-cat="{{ key }}" onclick="selectCategory('{{ key }}')"><span class="cat-icon">{{ cat.icon }}</span>{{ cat.name }}</div>{% endfor %}</div></div>
         <div class="form-group"><label>Цвет</label><input type="color" id="event-color" value="#48bb78"></div>
         <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="event-has-time" onchange="toggleTimeInputs()"> Указать время</label><div class="time-inputs" id="time-inputs" style="display:none;margin-top:8px;"><input type="time" id="event-start-time" placeholder="Начало"><span style="color:var(--text-secondary);">—</span><input type="time" id="event-end-time" placeholder="Конец"></div></div>
-        <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="event-recurring" onchange="toggleRecurring()"> Повторяющееся событие</label><div class="recurring-options" id="recurring-options"><select id="recurring-type" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);margin-top:6px;"><option value="weekly">Каждую неделю</option><option value="monthly">Каждый месяц</option><option value="yearly">Каждый год</option></select><input type="date" id="recurring-end" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);margin-top:6px;" placeholder="Дата окончания"></div></div>
+        <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="event-recurring" onchange="toggleRecurring()"> Повторяющееся событие</label><div class="recurring-options" id="recurring-options"><select id="recurring-type" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);margin-top:6px;"><option value="weekly">Каждую неделю</option><option value="monthly">Каждый месяц</option><option value="yearly">Каждый год</option></select></div></div>
         <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="event-shared" onchange="toggleShared()"> Совместное событие</label><div id="shared-friends" class="shared-list" style="display:none;"></div></div>
         <input type="hidden" id="editing-event-id" value=""><input type="hidden" id="selected-category" value="personal">
         <div class="button-group" style="display:flex;gap:10px;"><button onclick="saveEvent()" class="btn btn-primary" style="flex:1;">💾 Сохранить</button><button onclick="deleteEvent()" class="btn btn-outline" id="delete-event-btn" style="display:none;">🗑️ Удалить</button></div>
@@ -272,13 +272,31 @@
                 document.getElementById('info-title').textContent = formatDate(date);
                 document.getElementById('holiday-info').innerHTML = d.holiday ? '<div class="info-holiday">🎉 ' + d.holiday + '</div>' : '';
                 if(d.events && d.events.length > 0) {
-                    document.getElementById('events-info').innerHTML = d.events.map(function(e) {
+                    var evHtml = '';
+                    d.events.forEach(function(e) {
                         var timeStr = e.has_time && e.start_time ? ' 🕐 ' + e.start_time + (e.end_time ? '-' + e.end_time : '') : '';
-                        return '<div class="info-event-item"><div class="info-event-left"><span class="info-event-color" style="background:' + e.color + ';"></span><span class="info-event-title">' + (e.icon||'') + ' ' + e.title + timeStr + (e.is_recurring?' 🔄':'') + '</span></div><button onclick="openEventModalEdit(' + e.id + ')" style="background:none;border:none;cursor:pointer;font-size:0.9rem;">✏️</button></div>';
-                    }).join('');
-                } else { document.getElementById('events-info').innerHTML = '<p class="info-empty">Нет событий</p>'; }
-                if(d.comment) { document.getElementById('comment-info').innerHTML = '<div class="info-comment">' + d.comment.text + '</div>'; currentCommentId = d.comment.id; }
-                else { document.getElementById('comment-info').innerHTML = '<p class="info-empty">Нет заметок</p>'; currentCommentId = null; }
+                        evHtml += '<div class="info-event-item">' +
+                            '<div class="info-event-left">' +
+                                '<span class="info-event-color" style="background:' + e.color + ';"></span>' +
+                                '<div style="flex:1;min-width:0;">' +
+                                    '<span class="info-event-title">' + (e.icon||'') + ' ' + e.title + timeStr + (e.is_recurring?' 🔄':'') + '</span>' +
+                                    (e.description ? '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;">' + e.description.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' : '') +
+                                '</div>' +
+                            '</div>' +
+                            '<button onclick="openEventModalEdit(' + e.id + ')" style="background:none;border:none;cursor:pointer;font-size:0.9rem;">✏️</button>' +
+                        '</div>';
+                    });
+                    document.getElementById('events-info').innerHTML = evHtml;
+                } else {
+                    document.getElementById('events-info').innerHTML = '<p class="info-empty">Нет событий</p>';
+                }
+                if(d.comment) {
+                    document.getElementById('comment-info').innerHTML = '<div class="info-comment">' + d.comment.text.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+                    currentCommentId = d.comment.id;
+                } else {
+                    document.getElementById('comment-info').innerHTML = '<p class="info-empty">Нет заметок</p>';
+                    currentCommentId = null;
+                }
                 document.getElementById('info-modal').style.display = 'flex';
             });
         }
@@ -307,7 +325,19 @@
         function toggleRecurring() { document.getElementById('recurring-options').classList.toggle('show', document.getElementById('event-recurring').checked); }
         function toggleTimeInputs() { document.getElementById('time-inputs').style.display = document.getElementById('event-has-time').checked ? 'flex' : 'none'; }
         function toggleShared() { var show = document.getElementById('event-shared').checked; document.getElementById('shared-friends').style.display = show ? 'block' : 'none'; if(show) loadSharedFriends(); }
-        function loadSharedFriends() { fetch('/api/friends/list').then(function(r) { return r.json(); }).then(function(friends) { document.getElementById('shared-friends').innerHTML = friends.map(function(f) { return '<div class="shared-item" onclick="toggleSharedFriend(this,' + f.id + ')"><input type="checkbox" value="' + f.id + '"><img src="' + (f.avatar||'/static/uploads/default.png') + '"><span>' + f.username + '</span></div>'; }).join(''); }); }
+        function loadSharedFriends() {
+            fetch('/api/friends/list').then(function(r) { return r.json(); }).then(function(friends) {
+                var html = '';
+                friends.forEach(function(f) {
+                    html += '<div class="shared-item" onclick="toggleSharedFriend(this,' + f.id + ')">' +
+                        '<input type="checkbox" value="' + f.id + '" style="width:16px;height:16px;accent-color:var(--primary);pointer-events:none;">' +
+                        '<img src="' + (f.avatar || '/static/uploads/default.png') + '" style="width:24px;height:24px;border-radius:50%;">' +
+                        '<span>' + f.username + '</span>' +
+                        '</div>';
+                });
+                document.getElementById('shared-friends').innerHTML = html || '<div style="padding:10px;text-align:center;">Нет друзей</div>';
+            });
+        }
         function toggleSharedFriend(el, id) { var cb = el.querySelector('input'); cb.checked = !cb.checked; if(cb.checked) selectedFriends.add(id); else selectedFriends.delete(id); }
         function saveEvent() {
             var title = document.getElementById('event-title').value; if(!title) return alert('Введите название');

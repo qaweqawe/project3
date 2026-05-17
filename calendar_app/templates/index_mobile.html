@@ -177,7 +177,7 @@
 <body>
     <div class="app">
         <header class="app-header">
-            <div class="version-badge">v3.0</div>
+            <div class="version-badge">v3.1</div>
             <div class="header-top"><h1 id="page-title">📅 Календарь</h1>
                 <div class="user-controls"><span class="profile-link"><img src="{{ user.get_avatar_url() }}" class="user-avatar" onerror="this.src='/static/uploads/default.png'"></span><div class="notifications-dropdown"><span class="icon-link" onclick="toggleNotifications(event)">🔔</span><span id="notification-badge" class="notification-badge">0</span><div id="notifications-panel" class="notifications-panel" onclick="event.stopPropagation()"></div></div><button class="theme-toggle icon-link" onclick="toggleTheme()">🌙</button><button class="logout-btn icon-link" onclick="logout()">🚪</button></div>
             </div>
@@ -211,7 +211,7 @@
         <div class="form-group"><label>Категория</label><div id="category-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;">{% for key, cat in event_categories.items() %}<div data-cat="{{ key }}" onclick="selectCategory('{{ key }}')" style="padding:8px 4px;border-radius:8px;border:2px solid var(--border);text-align:center;cursor:pointer;font-size:0.7rem;"><span style="font-size:1.2rem;display:block;margin-bottom:2px;">{{ cat.icon }}</span>{{ cat.name }}</div>{% endfor %}</div></div>
         <div class="form-group"><label>Цвет</label><input type="color" id="event-color" value="#48bb78" style="width:40px;height:32px;"></div>
         <div class="form-group"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="event-has-time" onchange="toggleTimeInputsMobile()" style="width:16px;height:16px;accent-color:var(--primary);margin:0;"> Указать время</label><div id="time-inputs-mobile" style="display:none;margin-top:6px;" class="time-inputs"><input type="time" id="event-start-time"><span>—</span><input type="time" id="event-end-time"></div></div>
-        <div class="form-group"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="event-recurring" onchange="toggleRecurring()" style="width:16px;height:16px;accent-color:var(--primary);margin:0;"> Повторяющееся</label><div id="recurring-options" style="display:none;margin-top:6px;"><select id="recurring-type" style="width:100%;padding:6px;border-radius:6px;border:1px solid var(--border);"><option value="weekly">Каждую неделю</option><option value="monthly">Каждый месяц</option><option value="yearly">Каждый год</option></select><input type="date" id="recurring-end" style="width:100%;padding:6px;border-radius:6px;border:1px solid var(--border);margin-top:4px;"></div></div>
+        <div class="form-group"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="event-recurring" onchange="toggleRecurring()" style="width:16px;height:16px;accent-color:var(--primary);margin:0;"> Повторяющееся</label><div id="recurring-options" style="display:none;margin-top:6px;"><select id="recurring-type" style="width:100%;padding:6px;border-radius:6px;border:1px solid var(--border);"><option value="weekly">Каждую неделю</option><option value="monthly">Каждый месяц</option><option value="yearly">Каждый год</option></select></div></div>
         <div class="form-group"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="event-shared" onchange="toggleShared()" style="width:16px;height:16px;accent-color:var(--primary);margin:0;"> Совместное</label><div id="shared-friends" class="shared-list" style="display:none;"></div></div>
         <input type="hidden" id="editing-event-id" value=""><input type="hidden" id="selected-category" value="personal">
         <div style="display:flex;gap:6px;margin-top:8px;"><button onclick="saveEvent()" class="btn btn-primary" style="flex:1;">💾 Сохранить</button><button onclick="deleteEvent()" class="btn btn-danger" id="delete-event-btn" style="display:none;">🗑️ Удалить</button></div>
@@ -301,14 +301,93 @@
         function goToToday() { var d = new Date(); currentYear = d.getFullYear(); currentMonth = d.getMonth() + 1; currentDay = d.getDate(); document.getElementById('year-select').value = currentYear; document.getElementById('month-select').value = currentMonth; loadCurrentView(); }
         function switchView(v) { currentView = v; document.querySelectorAll('.view-btn').forEach(function(b) { b.classList.remove('active'); }); if (v === 'month') { document.querySelectorAll('.view-btn')[0].classList.add('active'); document.getElementById('monthView').style.display = 'block'; document.getElementById('weekView').style.display = 'none'; document.getElementById('weekView').classList.remove('active'); loadCalendar(); } else { document.querySelectorAll('.view-btn')[1].classList.add('active'); document.getElementById('monthView').style.display = 'none'; document.getElementById('weekView').style.display = 'block'; document.getElementById('weekView').classList.add('active'); loadWeekView(); } }
         function loadCurrentView() { currentYear = +document.getElementById('year-select').value; currentMonth = +document.getElementById('month-select').value; if (currentView === 'month') loadCalendar(); else loadWeekView(); }
-        function loadCalendar() { fetch('/get_calendar/' + currentYear + '/' + currentMonth).then(function(r) { return r.json(); }).then(function(data) { document.getElementById('current-month').textContent = data.month_name + ' ' + data.year; var tbody = document.getElementById('calendar-body'); tbody.innerHTML = ''; data.calendar.forEach(function(week) { var tr = document.createElement('tr'); week.forEach(function(day) { var td = document.createElement('td'); if (day.day === '') { td.className = 'empty-day'; td.innerHTML = '<div style="min-height:38px;"></div>'; } else { var div = document.createElement('div'); div.className = 'day-cell' + (day.date === TODAY ? ' today' : ''); div.setAttribute('data-date', day.date); if (day.color) div.style.backgroundColor = day.color + '26'; var inner = '<div class="day-number' + (day.is_holiday ? ' holiday' : '') + '">' + day.day + '</div>'; if (day.is_holiday && day.holiday_name) inner += '<div class="holiday-name">' + day.holiday_name + '</div>'; if (day.events.length) { var ec = document.createElement('div'); ec.className = 'events-container'; day.events.slice(0, 2).forEach(function(e) { var et = document.createElement('div'); et.className = 'event-title'; et.style.background = e.color; var timeStr = e.has_time && e.start_time ? e.start_time + ' ' : ''; et.innerHTML = e.icon + ' ' + timeStr + e.title; et.onclick = function(ev) { ev.stopPropagation(); openEventModalEdit(e.id); }; ec.appendChild(et); }); div.appendChild(ec); } div.innerHTML = inner; div.onclick = function() { openInfo(day.date); }; td.appendChild(div); } tr.appendChild(td); }); tbody.appendChild(tr); }); }); }
+        function loadCalendar() {
+            fetch('/get_calendar/' + currentYear + '/' + currentMonth).then(function(r) { return r.json(); }).then(function(data) {
+                document.getElementById('current-month').textContent = data.month_name + ' ' + data.year;
+                var tbody = document.getElementById('calendar-body');
+                tbody.innerHTML = '';
+                data.calendar.forEach(function(week) {
+                    var tr = document.createElement('tr');
+                    week.forEach(function(day) {
+                        var td = document.createElement('td');
+                        if (day.day === '') {
+                            td.className = 'empty-day';
+                            td.innerHTML = '<div style="min-height:38px;"></div>';
+                        } else {
+                            var div = document.createElement('div');
+                            div.className = 'day-cell' + (day.date === TODAY ? ' today' : '');
+                            div.setAttribute('data-date', day.date);
+                            if (day.color) div.style.backgroundColor = day.color + '26';
+
+                            // Собираем HTML
+                            var inner = '<div class="day-number' + (day.is_holiday ? ' holiday' : '') + '">' + day.day + '</div>';
+                            if (day.is_holiday && day.holiday_name) {
+                                inner += '<div class="holiday-name">' + day.holiday_name + '</div>';
+                            }
+                            if (day.events && day.events.length > 0) {
+                                inner += '<div class="events-container">';
+                                day.events.slice(0, 3).forEach(function(e) {
+                                    var timeStr = e.has_time && e.start_time ? e.start_time + ' ' : '';
+                                    inner += '<div class="event-title" style="background:' + e.color + ';" onclick="event.stopPropagation();openEventModalEdit(' + e.id + ')">' +
+                                        e.icon + ' ' + timeStr + e.title +
+                                    '</div>';
+                                });
+                                if (day.events.length > 3) {
+                                    inner += '<div class="event-title" style="background:#888;">+' + (day.events.length - 3) + ' ещё</div>';
+                                }
+                                inner += '</div>';
+                            }
+
+                            div.innerHTML = inner;
+                            div.onclick = function() { openInfo(day.date); };
+                            td.appendChild(div);
+                        }
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+            });
+        }
         function loadWeekView() { fetch('/get_week_view/' + currentYear + '/' + currentMonth + '/' + currentDay).then(function(r) { return r.json(); }).then(function(data) { document.getElementById('current-month').textContent = 'Неделя · ' + currentYear; var list = document.getElementById('week-list'); var dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']; openDayCard = null; list.innerHTML = data.days.map(function(d) { var isToday = d.date === TODAY; var preview = d.events.length ? d.events.map(function(e) { return e.title; }).join(', ') : 'Нет событий'; var slotsHtml = ''; for (var h = 0; h < 24; h++) { slotsHtml += '<div class="week-time-slot" data-date="' + d.date + '" data-hour="' + h + '" onclick="openEventModal(\'' + d.date + '\')"></div>'; } var timeLabelsHtml = ''; for (var h = 0; h < 24; h++) { timeLabelsHtml += '<div class="week-time-label">' + String(h).padStart(2, '0') + '</div>'; } return '<div class="week-day-card' + (isToday ? ' today' : '') + '" data-date="' + d.date + '"><div class="week-day-card-header" onclick="toggleDayCard(this.parentElement, \'' + d.date + '\')"><span class="day-label">' + dayNames[data.days.indexOf(d)] + '</span><span class="day-date">' + d.day + '</span><span class="day-events-preview">' + preview + '</span><span class="expand-icon">▶</span></div><div class="week-day-card-body"><div class="week-day-timeline"><div class="week-time-labels">' + timeLabelsHtml + '</div><div class="week-time-content" id="timeline-' + d.date + '">' + slotsHtml + '</div></div></div></div>'; }).join(''); setTimeout(function() { data.days.forEach(function(d) { d.events.forEach(function(e) { if (e.has_time && e.start_time) { var sp = e.start_time.split(':'); var sh = parseInt(sp[0]); var sm = parseInt(sp[1]) || 0; var eh = sh + 1; if (e.end_time) { var ep = e.end_time.split(':'); eh = parseInt(ep[0]) + (parseInt(ep[1]) || 0) / 60; } var dur = eh - sh; if (dur < 0.5) dur = 0.5; var slot = document.querySelector('#timeline-' + d.date + ' .week-time-slot[data-hour="' + sh + '"]'); if (slot) { var bar = document.createElement('div'); bar.className = 'week-event-block'; bar.style.background = e.color; bar.style.top = (sm / 60 * 32) + 'px'; bar.style.height = (dur * 32) + 'px'; bar.textContent = e.start_time + ' ' + e.title; bar.onclick = function(ev) { ev.stopPropagation(); openEventModalEdit(e.id); }; slot.appendChild(bar); } } }); }); }, 200); }); }
         function toggleDayCard(card, date) { if (openDayCard && openDayCard !== card) openDayCard.classList.remove('open'); card.classList.toggle('open'); openDayCard = card.classList.contains('open') ? card : null; if (card.classList.contains('open')) { setTimeout(function() { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100); } }
         function formatDate(d) { var parts = d.split('-'); return parts[2] + ' ' + ['Янв','Фев','Мар','Апр','Мая','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'][+parts[1]-1] + ' ' + parts[0]; }
         function closeInfoModal() { document.getElementById('info-modal').style.display = 'none'; }
         function closeEditModal() { document.getElementById('edit-modal').style.display = 'none'; }
         function closeEventModal() { document.getElementById('event-modal').style.display = 'none'; editingEventId = null; }
-        function openInfo(date) { selectedDate = date; fetch('/get_day_info/' + date).then(function(r) { return r.json(); }).then(function(d) { document.getElementById('info-title').textContent = formatDate(date); document.getElementById('holiday-info').innerHTML = d.holiday ? '<div style="padding:8px 10px;background:rgba(245,101,101,0.1);border-left:3px solid var(--holiday);border-radius:4px;color:var(--holiday);margin-bottom:6px;font-size:0.8rem;">🎉 ' + d.holiday + '</div>' : ''; var evHtml = '<p style="color:var(--text-secondary);font-size:0.7rem;margin:0;">Нет событий</p>'; if (d.events && d.events.length > 0) { evHtml = ''; d.events.forEach(function(e) { var timeStr = e.has_time && e.start_time ? ' 🕐 ' + e.start_time + (e.end_time ? '-' + e.end_time : '') : ''; evHtml += '<div class="info-event-item"><div class="info-event-left"><span class="info-event-color" style="background:' + e.color + ';"></span><span class="info-event-title">' + (e.icon||'') + ' ' + e.title + timeStr + (e.is_recurring?' 🔄':'') + '</span></div><button class="info-event-edit-btn" onclick="openEventModalEdit(' + e.id + ')">✏️</button></div>'; }); } document.getElementById('events-info').innerHTML = evHtml; document.getElementById('comment-info').innerHTML = d.comment ? '<div style="padding:5px 0;color:var(--text);font-size:0.8rem;">' + d.comment.text + '</div>' : '<p style="color:var(--text-secondary);font-size:0.7rem;margin:0;">Нет заметок</p>'; currentCommentId = d.comment ? d.comment.id : null; document.getElementById('info-modal').style.display = 'flex'; }); }
+        function openInfo(date) {
+            selectedDate = date;
+            fetch('/get_day_info/' + date).then(function(r) { return r.json(); }).then(function(d) {
+                document.getElementById('info-title').textContent = formatDate(date);
+                document.getElementById('holiday-info').innerHTML = d.holiday ? '<div style="padding:8px 10px;background:rgba(245,101,101,0.1);border-left:3px solid var(--holiday);border-radius:4px;color:var(--holiday);margin-bottom:6px;font-size:0.8rem;">🎉 ' + d.holiday + '</div>' : '';
+                if(d.events && d.events.length > 0) {
+                    var evHtml = '';
+                    d.events.forEach(function(e) {
+                        var timeStr = e.has_time && e.start_time ? ' 🕐 ' + e.start_time + (e.end_time ? '-' + e.end_time : '') : '';
+                        evHtml += '<div class="info-event-item">' +
+                            '<div class="info-event-left">' +
+                                '<span class="info-event-color" style="background:' + e.color + ';"></span>' +
+                                '<div style="flex:1;min-width:0;">' +
+                                    '<span class="info-event-title" style="display:block;">' + (e.icon||'') + ' ' + e.title + timeStr + (e.is_recurring?' 🔄':'') + '</span>' +
+                                    (e.description ? '<span style="font-size:0.7rem;color:var(--text-secondary);">' + e.description.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>' : '') +
+                                '</div>' +
+                            '</div>' +
+                            '<button class="info-event-edit-btn" onclick="openEventModalEdit(' + e.id + ')">✏️</button>' +
+                        '</div>';
+                    });
+                    document.getElementById('events-info').innerHTML = evHtml;
+                } else {
+                    document.getElementById('events-info').innerHTML = '<p style="color:var(--text-secondary);font-size:0.7rem;margin:0;">Нет событий</p>';
+                }
+                if(d.comment) {
+                    document.getElementById('comment-info').innerHTML = '<div style="padding:5px 0;color:var(--text);font-size:0.8rem;">' + d.comment.text.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+                    currentCommentId = d.comment.id;
+                } else {
+                    document.getElementById('comment-info').innerHTML = '<p style="color:var(--text-secondary);font-size:0.7rem;margin:0;">Нет заметок</p>';
+                    currentCommentId = null;
+                }
+                document.getElementById('info-modal').style.display = 'flex';
+            });
+        }
         function openEditModal() { closeInfoModal(); fetch('/get_comment/' + selectedDate).then(function(r) { return r.json(); }).then(function(d) { document.getElementById('comment-text').value = d.text || ''; currentCommentId = d.id; document.getElementById('edit-title').textContent = formatDate(selectedDate); document.getElementById('edit-modal').style.display = 'flex'; }); }
         function saveComment() { fetch('/save_comment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: selectedDate, text: document.getElementById('comment-text').value }) }).then(function() { closeEditModal(); loadCurrentView(); }); }
         function openEventModal(date) { if (date) selectedDate = date; if (!selectedDate) return; document.getElementById('event-modal-title').textContent = 'Новое событие'; document.getElementById('event-title').value = ''; document.getElementById('event-description').value = ''; document.getElementById('event-color').value = '#48bb78'; document.getElementById('editing-event-id').value = ''; document.getElementById('event-recurring').checked = false; document.getElementById('recurring-options').style.display = 'none'; document.getElementById('event-shared').checked = false; document.getElementById('shared-friends').style.display = 'none'; document.getElementById('delete-event-btn').style.display = 'none'; document.getElementById('event-has-time').checked = false; document.getElementById('time-inputs-mobile').style.display = 'none'; document.getElementById('event-start-time').value = ''; document.getElementById('event-end-time').value = ''; selectedFriends.clear(); selectCategory('personal'); document.getElementById('event-modal').style.display = 'flex'; }
@@ -317,7 +396,19 @@
         function toggleRecurring() { document.getElementById('recurring-options').style.display = document.getElementById('event-recurring').checked ? 'block' : 'none'; }
         function toggleTimeInputsMobile() { document.getElementById('time-inputs-mobile').style.display = document.getElementById('event-has-time').checked ? 'flex' : 'none'; }
         function toggleShared() { var show = document.getElementById('event-shared').checked; document.getElementById('shared-friends').style.display = show ? 'block' : 'none'; if (show) loadSharedFriends(); }
-        function loadSharedFriends() { fetch('/api/friends/list').then(function(r) { return r.json(); }).then(function(friends) { document.getElementById('shared-friends').innerHTML = friends.map(function(f) { return '<div class="mem-item" onclick="toggleSharedFriend(this,' + f.id + ')"><input type="checkbox" value="' + f.id + '"><img src="' + (f.avatar || '/static/uploads/default.png') + '" style="width:20px;height:20px;border-radius:50%;"><span>' + f.username + '</span></div>'; }).join(''); }); }
+        function loadSharedFriends() {
+            fetch('/api/friends/list').then(function(r) { return r.json(); }).then(function(friends) {
+                var html = '';
+                friends.forEach(function(f) {
+                    html += '<div class="mem-item" onclick="toggleSharedFriend(this,' + f.id + ')">' +
+                        '<input type="checkbox" value="' + f.id + '" style="width:16px;height:16px;accent-color:var(--primary);pointer-events:none;">' +
+                        '<img src="' + (f.avatar || '/static/uploads/default.png') + '" style="width:20px;height:20px;border-radius:50%;">' +
+                        '<span>' + f.username + '</span>' +
+                        '</div>';
+                });
+                document.getElementById('shared-friends').innerHTML = html || '<div class="empty-state">Нет друзей</div>';
+            });
+        }
         function toggleSharedFriend(el, id) { var cb = el.querySelector('input'); cb.checked = !cb.checked; if (cb.checked) selectedFriends.add(id); else selectedFriends.delete(id); }
         function saveEvent() { var title = document.getElementById('event-title').value; if (!title) return alert('Введите название'); var data = { date: selectedDate, title: title, description: document.getElementById('event-description').value, color: document.getElementById('event-color').value, category: document.getElementById('selected-category').value, is_recurring: document.getElementById('event-recurring').checked, recurring_type: document.getElementById('recurring-type') ? document.getElementById('recurring-type').value : null, recurring_end: document.getElementById('recurring-end') ? document.getElementById('recurring-end').value : null, is_shared: document.getElementById('event-shared').checked, shared_with: Array.from(selectedFriends), id: document.getElementById('editing-event-id').value || null, has_time: document.getElementById('event-has-time').checked, start_time: document.getElementById('event-start-time').value || null, end_time: document.getElementById('event-end-time').value || null }; fetch('/save_event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(function(r) { return r.json(); }).then(function(result) { if (result.success) { closeEventModal(); loadCurrentView(); } }); }
         function deleteEvent() { var id = document.getElementById('editing-event-id').value; if (!id) return; if (!confirm('Удалить событие?')) return; fetch('/delete_event/' + id, { method: 'DELETE' }).then(function() { closeEventModal(); loadCurrentView(); }); }
