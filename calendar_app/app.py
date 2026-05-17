@@ -773,30 +773,12 @@ def create_default_avatar():
                 img.save(path)
             except: pass
 
-def create_favicon():
-    path = os.path.join('static', 'favicon.ico')
-    if not os.path.exists(path):
-        try:
-            from PIL import Image, ImageDraw
-            img = Image.new('RGBA', (64, 64), (102, 126, 234, 255))
-            d = ImageDraw.Draw(img)
-            d.ellipse((8, 8, 56, 56), fill='white')
-            d.rectangle((22, 20, 42, 44), fill=(102, 126, 234, 255))
-            img.save(path, 'ICO')
-            print("✅ Фавиконка создана")
-        except Exception as e:
-            print(f"❌ Ошибка создания фавиконки: {e}")
-            try:
-                from PIL import Image
-                Image.new('RGBA', (64, 64), (102, 126, 234, 255)).save(path, 'ICO')
-            except: pass
-
 if __name__=='__main__':
     with app.app_context():
         db.create_all()
         create_default_avatar()
         create_favicon()
-        print("✅ База создана")
+        print("База создана")
     ip=get_local_ip()
-    print(f"\n📍 http://127.0.0.1:5000\n🌐 http://{ip}:5000\n")
+    print(f"\nhttp://{ip}:5000\n")
     app.run(debug=True,host='0.0.0.0',port=5000)
