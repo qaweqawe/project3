@@ -3,127 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Регистрация</title>
+    <title>Регистрация - Календарь</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .auth-card {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-        }
-        h1 { text-align: center; margin-bottom: 30px; color: #2d3748; }
+        .auth-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .auth-card { background: var(--surface); border-radius: 24px; padding: 40px; width: 100%; max-width: 440px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); border: 1px solid var(--border); }
+        .auth-card h2 { text-align: center; margin-bottom: 30px; font-size: 1.8rem; color: var(--text); }
         .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; color: #4a5568; }
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-        button {
-            width: 100%;
-            padding: 14px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        button:hover { background: #5a67d8; }
-        .error { color: #f56565; text-align: center; margin-top: 15px; }
-        .link { text-align: center; margin-top: 20px; }
-        .link a { color: #667eea; text-decoration: none; }
-        .version-badge {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            color: rgba(255,255,255,0.7);
-            font-size: 0.8rem;
-        }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text); font-size: 0.9rem; }
+        .form-input { width: 100%; padding: 14px 16px; border: 2px solid var(--border); border-radius: 12px; font-size: 1rem; background: var(--surface); color: var(--text); transition: border-color 0.2s; }
+        .form-input:focus { outline: none; border-color: var(--primary); }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; }
+        .form-group select { width: 100%; padding: 14px 16px; border: 2px solid var(--border); border-radius: 12px; font-size: 1rem; background: var(--surface); color: var(--text); cursor: pointer; }
+        .form-group select:focus { outline: none; border-color: var(--primary); }
+        .form-group small { display: block; margin-top: 4px; color: var(--text-secondary); font-size: 0.75rem; }
+        .btn-primary { width: 100%; padding: 14px; border: none; border-radius: 12px; background: var(--primary); color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .auth-link { text-align: center; margin-top: 20px; color: var(--text-secondary); font-size: 0.9rem; }
+        .auth-link a { color: var(--primary); text-decoration: none; font-weight: 600; }
+        .auth-link a:hover { text-decoration: underline; }
+        .error-message { color: var(--holiday); font-size: 0.85rem; margin-top: 4px; display: none; }
     </style>
 </head>
 <body>
-    <div class="auth-card">
-        <h1>📅 Регистрация</h1>
-        <form onsubmit="register(event)">
-            <div class="form-group">
-                <label>Имя пользователя</label>
-                <input type="text" id="username" required minlength="3">
-            </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="email" required>
-            </div>
-            <div class="form-group">
-                <label>Пол</label>
-                <select id="gender">
-                    <option value="male">👨 Мужской</option>
-                    <option value="female">👩 Женский</option>
-                    <option value="other" selected>🌟 Другой</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Дата рождения</label>
-                <input type="date" id="birth_date">
-            </div>
-            <div class="form-group">
-                <label>Пароль</label>
-                <input type="password" id="password" required minlength="6">
-            </div>
-            <div class="form-group">
-                <label>Подтвердите пароль</label>
-                <input type="password" id="confirm_password" required>
-            </div>
-            <button type="submit">Зарегистрироваться</button>
-        </form>
-        <div id="error" class="error"></div>
-        <p class="link">Уже есть аккаунт? <a href="/login">Войти</a></p>
+    <div class="auth-container">
+        <div class="auth-card">
+            <h2>Регистрация</h2>
+            <form id="registerForm" onsubmit="register(event)">
+                <div class="form-group">
+                    <label>Имя пользователя</label>
+                    <input type="text" id="username" class="form-input" placeholder="Придумайте имя" required autocomplete="username">
+                    <div class="error-message" id="username-error"></div>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" class="form-input" placeholder="your@email.com" required autocomplete="email">
+                    <div class="error-message" id="email-error"></div>
+                </div>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" id="password" class="form-input" placeholder="Минимум 6 символов" required autocomplete="new-password">
+                    <div class="error-message" id="password-error"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Пол</label>
+                        <select id="gender" class="form-input">
+                            <option value="other">Другой</option>
+                            <option value="male">Мужской</option>
+                            <option value="female">Женский</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Дата рождения</label>
+                        <input type="date" id="birth-date" class="form-input">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" id="registerBtn">Зарегистрироваться</button>
+            </form>
+            <div class="auth-link">Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a></div>
+        </div>
     </div>
-    <div class="version-badge">v2.5-release</div>
+        <div class="version-badge">v3.0</div>
     <script>
         async function register(e) {
             e.preventDefault();
-
-            const pwd = document.getElementById('password').value;
-            const confirm = document.getElementById('confirm_password').value;
-
-            if (pwd !== confirm) {
-                document.getElementById('error').textContent = 'Пароли не совпадают';
-                return;
+            var btn = document.getElementById('registerBtn');
+            var username = document.getElementById('username').value.trim();
+            var email = document.getElementById('email').value.trim();
+            var password = document.getElementById('password').value;
+            var gender = document.getElementById('gender').value;
+            var birthDate = document.getElementById('birth-date').value;
+            document.querySelectorAll('.error-message').forEach(function(el) { el.style.display = 'none'; });
+            if (!username) { showError('username-error', 'Введите имя'); return; }
+            if (username.length < 3) { showError('username-error', 'Минимум 3 символа'); return; }
+            if (!email) { showError('email-error', 'Введите email'); return; }
+            if (!password) { showError('password-error', 'Введите пароль'); return; }
+            if (password.length < 6) { showError('password-error', 'Минимум 6 символов'); return; }
+            btn.disabled = true; btn.textContent = 'Регистрация...';
+            try {
+                var res = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, email: email, password: password, gender: gender, birth_date: birthDate || null })
+                });
+                var data = await res.json();
+                if (data.success) {
+                    if (data.theme) document.documentElement.setAttribute('data-theme', data.theme);
+                    window.location.href = '/';
+                } else {
+                    if (data.error && data.error.toLowerCase().includes('пользователь')) showError('username-error', data.error);
+                    else if (data.error && data.error.toLowerCase().includes('email')) showError('email-error', data.error);
+                    else showError('password-error', data.error || 'Ошибка регистрации');
+                }
+            } catch (err) {
+                showError('password-error', 'Ошибка соединения');
             }
-
-            const resp = await fetch('/register', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    username: document.getElementById('username').value,
-                    email: document.getElementById('email').value,
-                    password: pwd,
-                    gender: document.getElementById('gender').value,
-                    birth_date: document.getElementById('birth_date').value || null
-                })
-            });
-
-            const data = await resp.json();
-            if (data.success) {
-                window.location.href = '/';
-            } else {
-                document.getElementById('error').textContent = data.error;
-            }
+            btn.disabled = false; btn.textContent = 'Зарегистрироваться';
+        }
+        function showError(id, msg) {
+            var el = document.getElementById(id);
+            el.textContent = msg;
+            el.style.display = 'block';
         }
     </script>
 </body>

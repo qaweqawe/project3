@@ -4,550 +4,336 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Календарь</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        .calendar-main { padding: 12px !important; }
+        .calendar-main { padding: 12px !important; display: flex; flex-direction: column; flex: 1; overflow: hidden; }
         .calendar-wrapper { overflow: hidden !important; }
         .calendar { border-spacing: 2px !important; }
         .calendar td { height: auto !important; }
-        .day-cell { padding: 5px !important; }
-        .calendar-header { margin-bottom: 8px !important; padding-bottom: 8px !important; }
+        .day-cell { padding: 5px !important; min-height: 85px !important; }
+        .calendar-header { margin-bottom: 8px !important; padding-bottom: 8px !important; flex-shrink: 0; }
         .calendar-header h2 { font-size: 1.3rem !important; }
         .calendar-wrapper::-webkit-scrollbar { display: none; }
         .calendar-wrapper { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Старый стиль для модального окна */
-        .info-section {
-            margin-bottom: 20px;
-        }
-        .info-section h4 {
-            margin-bottom: 12px;
-            color: var(--text);
-            font-size: 1rem;
-            font-weight: 600;
-        }
-        .holiday-block {
-            padding: 12px 16px;
-            background: rgba(245, 101, 101, 0.1);
-            border-left: 4px solid var(--holiday);
-            border-radius: 8px;
-            color: var(--holiday);
-            font-weight: 500;
-        }
-        .event-info-item {
-            padding: 12px;
-            background: var(--hover);
-            border-radius: 8px;
-            margin-bottom: 8px;
-            border-left: 4px solid;
-        }
-        .event-info-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-        .event-info-title {
-            font-weight: 600;
-            color: var(--text);
-        }
-        .event-actions {
-            display: flex;
-            gap: 5px;
-        }
-        .event-edit-btn, .event-delete-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 2px 5px;
-        }
-        .event-info-description {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-top: 5px;
-            padding-top: 5px;
-            border-top: 1px solid var(--border);
-        }
-        .comment-block {
-            padding: 12px;
-            background: var(--hover);
-            border-radius: 8px;
-            border-left: 4px solid;
-            color: var(--text);
-        }
+        .view-switcher { display: flex; gap: 5px; margin-bottom: 8px; flex-shrink: 0; }
+        .view-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: 0.85rem; font-weight: 500; }
+        .view-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .view-btn:hover { border-color: var(--primary); }
+        #monthView { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+        #monthView .calendar-wrapper { flex: 1; overflow-y: auto; overflow-x: hidden; }
+        #weekView { flex: 1; overflow-y: auto; display: none; }
+        #weekView.active { display: block; }
+        .week-list-desktop { display: flex; flex-direction: column; gap: 8px; padding-right: 5px; }
+        .week-day-card-d { background: var(--hover); border-radius: 10px; border: 1px solid var(--border); overflow: hidden; transition: opacity 0.2s, max-height 0.3s; }
+        .week-day-card-d.today { border: 2px solid var(--primary); }
+        .week-day-card-d.collapsed { max-height: 52px; opacity: 0.7; }
+        .week-day-card-d.collapsed .week-day-body-d { display: none; }
+        .week-day-card-d.hidden-card { display: none; }
+        .week-day-header-d { display: flex; align-items: center; gap: 12px; padding: 10px 14px; cursor: pointer; }
+        .week-day-header-d .day-label-d { font-size: 0.8rem; color: var(--text-secondary); width: 35px; text-align: center; font-weight: 500; }
+        .week-day-card-d.today .day-label-d { color: var(--primary); font-weight: 700; }
+        .week-day-header-d .day-date-d { font-weight: 600; font-size: 0.95rem; }
+        .week-day-card-d.today .day-date-d { color: var(--primary); }
+        .week-day-header-d .day-events-preview-d { flex: 1; text-align: right; font-size: 0.75rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .week-day-header-d .expand-icon-d { font-size: 0.8rem; color: var(--text-secondary); transition: transform 0.2s; }
+        .week-day-card-d.open .expand-icon-d { transform: rotate(90deg); }
+        .week-day-body-d { display: none; border-top: 1px solid var(--border); overflow-x: auto; }
+        .week-day-card-d.open .week-day-body-d { display: block; }
+        .week-timeline-d { display: flex; min-width: 100%; }
+        .week-time-labels-d { width: 40px; flex-shrink: 0; }
+        .week-time-label-d { height: 40px; font-size: 0.6rem; color: var(--text-secondary); text-align: right; padding-right: 6px; line-height: 14px; }
+        .week-time-content-d { flex: 1; position: relative; min-width: 250px; }
+        .week-time-slot-d { height: 40px; border-bottom: 1px solid rgba(128,128,128,0.08); position: relative; cursor: pointer; }
+        .week-time-slot-d:hover { background: rgba(102,126,234,0.03); }
+        .week-event-block-d { position: absolute; left: 3px; right: 3px; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; color: white; overflow: hidden; cursor: pointer; z-index: 1; white-space: nowrap; text-overflow: ellipsis; line-height: 1.5; }
+        .week-event-block-d:hover { opacity: 0.85; z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .notifications-dropdown { position: relative; }
+        .notification-badge { position: absolute; top: -5px; right: -5px; background: var(--holiday); color: white; border-radius: 50%; width: 18px; height: 18px; display: none; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: bold; }
+        .notifications-panel { display: none; position: absolute; top: 45px; right: 0; width: 340px; max-height: 450px; background: var(--surface); border: 2px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); z-index: 1000; overflow: hidden; }
+        .notifications-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); font-weight: 600; background: var(--surface); }
+        .notifications-header button { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 0.85rem; }
+        .notifications-list { max-height: 380px; overflow-y: auto; }
+        .notification-item { position: relative; padding: 14px 40px 14px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
+        .notification-item:hover { background: var(--hover); }
+        .notification-item.unread { background: rgba(102,126,234,0.1); }
+        .notification-title { font-weight: 600; margin-bottom: 4px; padding-right: 20px; }
+        .notification-message { font-size: 0.85rem; color: var(--text-secondary); padding-right: 20px; }
+        .notification-time { font-size: 0.7rem; color: var(--text-secondary); margin-top: 6px; }
+        .notification-delete { position: absolute; top: 10px; right: 10px; background: none; border: none; cursor: pointer; font-size: 0.9rem; opacity: 0.5; padding: 4px 8px; border-radius: 6px; color: var(--text); z-index: 1; }
+        .notification-delete:hover { opacity: 1; background: rgba(245,101,101,0.15); color: var(--holiday); }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: var(--surface); border-radius: 20px; overflow: hidden; width: 460px; max-width: 90vw; max-height: 80vh; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--border); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
+        .modal-header h3 { font-size: 1.2rem; font-weight: 600; margin: 0; color: white; }
+        .modal-close { background: rgba(255,255,255,0.2); border: none; font-size: 20px; cursor: pointer; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .modal-close:hover { background: rgba(255,255,255,0.3); transform: rotate(90deg); }
+        .modal-body { padding: 22px; overflow-y: auto; max-height: calc(80vh - 70px); }
+        .info-section { margin-bottom: 18px; }
+        .info-section h4 { margin: 0 0 8px 0; font-size: 0.95rem; color: var(--text); font-weight: 600; }
+        .info-holiday { padding: 12px 16px; background: rgba(245,101,101,0.1); border-left: 4px solid var(--holiday); border-radius: 8px; color: var(--holiday); font-weight: 500; margin-bottom: 12px; font-size: 1rem; }
+        .info-event-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+        .info-event-item:last-child { border-bottom: none; }
+        .info-event-left { display: flex; align-items: center; gap: 8px; }
+        .info-event-color { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .info-event-title { font-weight: 500; color: var(--text); font-size: 0.9rem; }
+        .info-comment { padding: 8px 0; color: var(--text); font-size: 0.9rem; line-height: 1.5; }
+        .info-empty { color: var(--text-secondary); font-size: 0.85rem; padding: 4px 0; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: var(--text); font-size: 0.9rem; }
+        .form-group input[type="text"], .form-group textarea, .form-group select { width: 100%; padding: 10px 14px; border: 2px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); font-family: inherit; font-size: 0.9rem; }
+        .form-group input[type="text"]:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--primary); }
+        .form-group textarea { resize: vertical; min-height: 50px; }
+        .form-group input[type="color"] { width: 44px; height: 36px; border: 2px solid var(--border); border-radius: 6px; cursor: pointer; padding: 2px; }
+        .form-group input[type="time"] { width: 100%; padding: 10px 14px; border: 2px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); font-size: 0.9rem; }
+        .form-group.checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .form-group.checkbox-label input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); margin: 0; }
+        .time-inputs { display: flex; gap: 10px; align-items: center; }
+        .time-inputs input { flex: 1; }
+        .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .cat-option { padding: 10px; border-radius: 10px; border: 2px solid var(--border); text-align: center; cursor: pointer; font-size: 0.8rem; }
+        .cat-option:hover { border-color: var(--primary); }
+        .cat-option.active { border-color: var(--primary); background: rgba(102,126,234,0.1); }
+        .cat-icon { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+        .recurring-options { display: none; margin-top: 8px; }
+        .recurring-options.show { display: block; }
+        .shared-list { margin-top: 8px; max-height: 150px; overflow-y: auto; border: 2px solid var(--border); border-radius: 8px; padding: 6px; background: var(--hover); }
+        .shared-item { display: flex; align-items: center; gap: 8px; padding: 6px; border-bottom: 1px solid var(--border); cursor: pointer; }
+        .shared-item:last-child { border-bottom: none; }
+        .shared-item input { width: 16px; height: 16px; accent-color: var(--primary); }
+        .shared-item span { font-size: 0.85rem; color: var(--text); }
+        .shared-item img { width: 26px; height: 26px; border-radius: 50%; }
+        .event-title-cat { display: flex; align-items: center; gap: 3px; }
     </style>
 </head>
 <body>
     <div class="app">
-        <div class="version-badge">v2.5-release</div>
-        <header class="app-header" style="padding: 12px 20px;">
-            <div class="header-top" style="margin-bottom: 12px;">
+        <div class="version-badge">v3.0</div>
+        <header class="app-header" style="padding: 10px 20px;">
+            <div class="header-top" style="margin-bottom: 8px;">
                 <h1 style="font-size: 1.5rem;">📅 Календарь</h1>
                 <div class="user-controls">
-                    <a href="{{ url_for('profile') }}" class="profile-link">
-                        <img src="{{ user.get_avatar_url() }}" alt="{{ user.username }}" class="user-avatar">
-                        <span class="user-name">{{ user.username }}</span>
-                    </a>
+                    <a href="{{ url_for('profile') }}" class="profile-link"><img src="{{ user.get_avatar_url() }}" alt="{{ user.username }}" class="user-avatar" onerror="this.src='/static/uploads/default.png'"><span class="user-name">{{ user.username }}</span></a>
                     <a href="{{ url_for('friends_page') }}" class="icon-link" title="Друзья">👥</a>
-                    <div class="notifications-dropdown">
-                        <span class="icon-link" onclick="toggleNotifications(event)">🔔</span>
-                        <span id="notification-badge" class="notification-badge">0</span>
-                        <div id="notifications-panel" class="notifications-panel" onclick="event.stopPropagation()"></div>
-                    </div>
+                    <div class="notifications-dropdown"><span class="icon-link" onclick="toggleNotifications(event)">🔔</span><span id="notification-badge" class="notification-badge">0</span><div id="notifications-panel" class="notifications-panel" onclick="event.stopPropagation()"></div></div>
                     <button class="theme-toggle icon-link" onclick="toggleTheme()">🌙</button>
                     <button class="logout-btn icon-link" onclick="logout()">🚪</button>
                 </div>
             </div>
             <div class="header-controls">
-                <div class="date-selector">
-                    <select id="year-select"></select>
-                    <select id="month-select">
-                        <option value="1">Январь</option><option value="2">Февраль</option><option value="3">Март</option>
-                        <option value="4">Апрель</option><option value="5">Май</option><option value="6">Июнь</option>
-                        <option value="7">Июль</option><option value="8">Август</option><option value="9">Сентябрь</option>
-                        <option value="10">Октябрь</option><option value="11">Ноябрь</option><option value="12">Декабрь</option>
-                    </select>
-                    <button onclick="loadCalendar()" class="btn btn-primary">Показать</button>
-                    <button onclick="goToToday()" class="btn btn-secondary">📍 Сегодня</button>
-                </div>
-                <div class="color-tools">
-                    <input type="color" id="day-color" value="#ff6b6b">
-                    <button onclick="toggleColorMode()" class="btn btn-secondary" id="colorModeBtn">🎨 Выбрать дни</button>
-                    <button onclick="applyColor()" class="btn btn-primary" id="applyColorBtn" style="display:none;">Применить</button>
-                    <button onclick="clearColors()" class="btn btn-outline">🗑️ Очистить</button>
-                </div>
+                <div class="date-selector"><select id="year-select"></select><select id="month-select"><option value="1">Январь</option><option value="2">Февраль</option><option value="3">Март</option><option value="4">Апрель</option><option value="5">Май</option><option value="6">Июнь</option><option value="7">Июль</option><option value="8">Август</option><option value="9">Сентябрь</option><option value="10">Октябрь</option><option value="11">Ноябрь</option><option value="12">Декабрь</option></select><button onclick="loadCurrentView()" class="btn btn-primary">Показать</button><button onclick="goToToday()" class="btn btn-secondary">Сегодня</button></div>
+                <div style="display:flex;gap:10px;"><div class="color-tools" style="display:flex;gap:8px;align-items:center;"><input type="color" id="day-color" value="#ff6b6b"><button onclick="toggleColorMode()" class="btn btn-secondary" id="colorModeBtn">Окрасить</button><button onclick="applyColor()" class="btn btn-primary" id="applyColorBtn" style="display:none;">Применить</button><button onclick="clearColors()" class="btn btn-outline">Очистить</button></div></div>
             </div>
         </header>
-
         <main class="calendar-main">
-            <div class="calendar-header">
-                <h2 id="current-month">Загрузка...</h2>
-                <div class="calendar-legend">
-                    <span><span class="legend-color" style="background:#f56565;"></span>Праздник</span>
-                    <span><span class="legend-color" style="background:#48bb78;"></span>Событие</span>
-                    <span><span class="legend-color" style="background:#667eea;"></span>Заметка</span>
-                </div>
-            </div>
-            <div class="calendar-wrapper">
-                <table class="calendar">
-                    <thead><tr><th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th><th>Сб</th><th>Вс</th></tr></thead>
-                    <tbody id="calendar-body"><tr><td colspan="7" style="text-align:center;padding:40px;">Загрузка...</td></tr></tbody>
-                </table>
-            </div>
+            <div class="view-switcher"><button class="view-btn active" onclick="switchView('month')">Месяц</button><button class="view-btn" onclick="switchView('week')">Неделя</button></div>
+            <div class="calendar-header"><h2 id="current-month">Загрузка...</h2></div>
+            <div id="monthView"><div class="calendar-wrapper"><table class="calendar"><thead><tr><th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th><th>Сб</th><th>Вс</th></tr></thead><tbody id="calendar-body"><tr><td colspan="7" style="text-align:center;padding:40px;">Загрузка...</td></tr></tbody></table></div></div>
+            <div id="weekView"><div class="week-list-desktop" id="week-list-desktop"></div></div>
         </main>
     </div>
 
-    <div id="info-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="info-title"></h3>
-                <button class="modal-close" onclick="closeInfoModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="holiday-info" class="info-section"></div>
-                <div id="events-info" class="info-section"></div>
-                <div id="comment-info" class="info-section"></div>
-                <button onclick="openEditModal()" class="btn btn-primary" style="width:100%;margin-top:10px;">✏️ Редактировать</button>
-            </div>
-        </div>
-    </div>
+    <div id="info-modal" class="modal"><div class="modal-content"><div class="modal-header"><h3 id="info-title"></h3><button class="modal-close" onclick="closeInfoModal()">&times;</button></div><div class="modal-body"><div id="holiday-info"></div><div class="info-section"><h4>📌 События</h4><div id="events-info"></div></div><div class="info-section"><h4>📝 Заметка</h4><div id="comment-info"></div></div><button onclick="openEventModal()" class="btn btn-primary" style="width:100%;margin-bottom:8px;">➕ Добавить событие</button><button onclick="openEditModal()" class="btn btn-primary" style="width:100%;">✏️ Редактировать заметку</button></div></div></div>
 
-    <div id="edit-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="edit-title"></h3>
-                <button class="modal-close" onclick="closeEditModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="tabs">
-                    <button class="tab-btn active" onclick="switchTab('note')">📝 Заметка</button>
-                    <button class="tab-btn" onclick="switchTab('event')">📌 Событие</button>
-                </div>
-                <div id="note-tab" class="tab-content active">
-                    <textarea id="comment-text" placeholder="Введите заметку..." rows="4"></textarea>
-                    <div class="button-group">
-                        <button onclick="saveComment()" class="btn btn-primary">💾 Сохранить</button>
-                        <button onclick="deleteComment()" class="btn btn-outline" id="delete-comment-btn" style="display:none;">🗑️ Удалить</button>
-                    </div>
-                </div>
-                <div id="event-tab" class="tab-content">
-                    <input type="text" id="event-title" placeholder="Название события">
-                    <textarea id="event-description" placeholder="Описание" rows="2"></textarea>
-                    <div style="margin-bottom:15px;">
-                        <label style="display:flex;align-items:center;gap:10px;">
-                            <input type="checkbox" id="share-event"> Поделиться с друзьями
-                        </label>
-                        <div id="friends-select" style="display:none;margin-top:10px;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:10px;">
-                            <div id="friends-list-select"></div>
-                        </div>
-                    </div>
-                    <div class="button-group">
-                        <button onclick="saveEvent()" class="btn btn-primary" id="save-event-btn">➕ Добавить</button>
-                        <button onclick="cancelEditEvent()" class="btn btn-outline" id="cancel-edit-btn" style="display:none;">Отмена</button>
-                    </div>
-                    <div id="events-list" style="margin-top:20px;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <div id="event-modal" class="modal"><div class="modal-content"><div class="modal-header"><h3 id="event-modal-title">Новое событие</h3><button class="modal-close" onclick="closeEventModal()">&times;</button></div><div class="modal-body">
+        <div class="form-group"><label>Название</label><input type="text" id="event-title" placeholder="Введите название"></div>
+        <div class="form-group"><label>Описание</label><textarea id="event-description" placeholder="Введите описание" rows="2"></textarea></div>
+        <div class="form-group"><label>Категория</label><div class="category-grid" id="category-grid">{% for key, cat in event_categories.items() %}<div class="cat-option" data-cat="{{ key }}" onclick="selectCategory('{{ key }}')"><span class="cat-icon">{{ cat.icon }}</span>{{ cat.name }}</div>{% endfor %}</div></div>
+        <div class="form-group"><label>Цвет</label><input type="color" id="event-color" value="#48bb78"></div>
+        <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="event-has-time" onchange="toggleTimeInputs()"> Указать время</label><div class="time-inputs" id="time-inputs" style="display:none;margin-top:8px;"><input type="time" id="event-start-time" placeholder="Начало"><span style="color:var(--text-secondary);">—</span><input type="time" id="event-end-time" placeholder="Конец"></div></div>
+        <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="event-recurring" onchange="toggleRecurring()"> Повторяющееся событие</label><div class="recurring-options" id="recurring-options"><select id="recurring-type" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);margin-top:6px;"><option value="weekly">Каждую неделю</option><option value="monthly">Каждый месяц</option><option value="yearly">Каждый год</option></select><input type="date" id="recurring-end" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);margin-top:6px;" placeholder="Дата окончания"></div></div>
+        <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="event-shared" onchange="toggleShared()"> Совместное событие</label><div id="shared-friends" class="shared-list" style="display:none;"></div></div>
+        <input type="hidden" id="editing-event-id" value=""><input type="hidden" id="selected-category" value="personal">
+        <div class="button-group" style="display:flex;gap:10px;"><button onclick="saveEvent()" class="btn btn-primary" style="flex:1;">💾 Сохранить</button><button onclick="deleteEvent()" class="btn btn-outline" id="delete-event-btn" style="display:none;">🗑️ Удалить</button></div>
+    </div></div></div>
+
+    <div id="edit-modal" class="modal"><div class="modal-content"><div class="modal-header"><h3 id="edit-title"></h3><button class="modal-close" onclick="closeEditModal()">&times;</button></div><div class="modal-body"><textarea id="comment-text" placeholder="Введите заметку..." rows="4" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-size:0.95rem;"></textarea><div class="button-group" style="display:flex;gap:10px;margin-top:10px;"><button onclick="saveComment()" class="btn btn-primary">💾 Сохранить</button><button onclick="deleteComment()" class="btn btn-outline" id="delete-comment-btn" style="display:none;">🗑️ Удалить</button></div></div></div></div>
 
     <script>
-        const TODAY = "{{ current_year }}-{{ '%02d' % current_month }}-{{ '%02d' % current_day }}";
-        let currentYear = {{ current_year }}, currentMonth = {{ current_month }}, selectedDate = null, colorMode = false, selectedDays = new Set(), currentCommentId = null, editingEventId = null;
-        let currentTheme = localStorage.getItem('theme') || '{{ user.theme }}' || 'light';
-        let selectedFriends = new Set();
-
-        function loadTheme() {
-            document.documentElement.setAttribute('data-theme', currentTheme);
-            document.querySelector('.theme-toggle').textContent = currentTheme === 'light' ? '🌙' : '☀️';
-        }
-
-        function toggleTheme() {
-            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-            localStorage.setItem('theme', currentTheme);
-            loadTheme();
-            fetch('/update_theme', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({theme:currentTheme})});
-            loadCalendar();
-        }
-
+        var TODAY = "{{ current_year }}-{{ '%02d' % current_month }}-{{ '%02d' % current_day }}";
+        var currentYear = {{ current_year }}, currentMonth = {{ current_month }}, currentDay = {{ current_day }};
+        var selectedDate = null, colorMode = false, selectedDays = new Set(), currentCommentId = null, editingEventId = null;
+        var currentTheme = localStorage.getItem('theme') || '{{ user.theme }}' || 'light';
+        var currentView = 'month';
+        var selectedFriends = new Set();
+        var openDesktopCard = null;
+        function loadTheme() { document.documentElement.setAttribute('data-theme', currentTheme); var btn = document.querySelector('.theme-toggle'); if (btn) btn.textContent = currentTheme === 'light' ? '🌙' : '☀️'; }
+        function toggleTheme() { currentTheme = currentTheme === 'light' ? 'dark' : 'light'; localStorage.setItem('theme', currentTheme); loadTheme(); fetch('/update_theme', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({theme:currentTheme})}); }
         function logout() { if(confirm('Выйти?')) window.location.href = '/logout'; }
-
-        function initYearSelect() {
-            const s = document.getElementById('year-select');
-            for(let y=2010; y<=2044; y++) s.add(new Option(y, y, y==currentYear, y==currentYear));
-            document.getElementById('month-select').value = currentMonth;
-        }
-
-        function goToToday() {
-            const d = new Date();
-            currentYear = d.getFullYear();
-            currentMonth = d.getMonth()+1;
-            document.getElementById('year-select').value = currentYear;
-            document.getElementById('month-select').value = currentMonth;
-            loadCalendar();
-        }
-
-        async function loadCalendar() {
-            currentYear = +document.getElementById('year-select').value;
-            currentMonth = +document.getElementById('month-select').value;
-            const res = await fetch(`/get_calendar/${currentYear}/${currentMonth}`);
-            const data = await res.json();
-            document.getElementById('current-month').textContent = `${data.month_name} ${data.year}`;
-            renderCalendar(data.calendar);
-        }
-
-        function renderCalendar(data) {
-            const tbody = document.getElementById('calendar-body');
-            tbody.innerHTML = '';
-            data.forEach(week => {
-                const tr = document.createElement('tr');
-                week.forEach(day => {
-                    const td = document.createElement('td');
-                    if(day.day === '') {
-                        td.className = 'empty-day';
-                        td.innerHTML = '<div style="min-height:80px;"></div>';
-                    } else {
-                        const div = document.createElement('div');
-                        div.className = 'day-cell' + (day.date === TODAY ? ' today' : '');
-                        div.setAttribute('data-date', day.date);
-                        if(day.color) div.style.backgroundColor = day.color + '26';
-                        div.innerHTML = `<div class="day-number${day.is_holiday?' holiday':''}">${day.day}</div>`;
-                        if(day.is_holiday && day.holiday_name) div.innerHTML += `<div class="holiday-name">${day.holiday_name}</div>`;
-                        if(day.events.length) {
-                            const ec = document.createElement('div'); ec.className = 'events-container';
-                            day.events.slice(0,3).forEach(e => {
-                                const et = document.createElement('div');
-                                et.className = 'event-title';
-                                et.style.background = e.color;
-                                et.textContent = (e.is_shared ? '👥 ' : '') + e.title;
-                                ec.appendChild(et);
-                            });
-                            div.appendChild(ec);
-                        }
-                        if(day.has_comment) {
-                            const f = document.createElement('div'); f.className = 'day-footer';
-                            const i = document.createElement('span'); i.className = 'comment-indicator';
-                            i.style.background = day.comment_color; f.appendChild(i); div.appendChild(f);
-                        }
-                        div.onclick = (e) => {
-                            if(colorMode) {
-                                e.currentTarget.classList.toggle('selected');
-                                selectedDays.has(day.date) ? selectedDays.delete(day.date) : selectedDays.add(day.date);
-                            } else openInfo(day.date);
-                        };
-                        td.appendChild(div);
-                    }
-                    tr.appendChild(td);
+        function initYearSelect() { var s = document.getElementById('year-select'); for(var y=2010; y<=2044; y++) s.add(new Option(y, y, y==currentYear, y==currentYear)); document.getElementById('month-select').value = currentMonth; }
+        function goToToday() { var d = new Date(); currentYear = d.getFullYear(); currentMonth = d.getMonth()+1; currentDay = d.getDate(); document.getElementById('year-select').value = currentYear; document.getElementById('month-select').value = currentMonth; loadCurrentView(); }
+        function switchView(view) { currentView = view; document.querySelectorAll('.view-btn').forEach(function(b) { b.classList.remove('active'); }); if(view === 'month') { document.querySelectorAll('.view-btn')[0].classList.add('active'); document.getElementById('monthView').style.display = 'flex'; document.getElementById('weekView').style.display = 'none'; document.getElementById('weekView').classList.remove('active'); loadCalendar(); } else { document.querySelectorAll('.view-btn')[1].classList.add('active'); document.getElementById('monthView').style.display = 'none'; document.getElementById('weekView').style.display = 'block'; document.getElementById('weekView').classList.add('active'); loadWeekView(); } }
+        function loadCurrentView() { currentYear = +document.getElementById('year-select').value; currentMonth = +document.getElementById('month-select').value; if(currentView === 'month') loadCalendar(); else loadWeekView(); }
+        function loadCalendar() {
+            currentYear = +document.getElementById('year-select').value; currentMonth = +document.getElementById('month-select').value;
+            fetch('/get_calendar/' + currentYear + '/' + currentMonth).then(function(r) { return r.json(); }).then(function(data) {
+                document.getElementById('current-month').textContent = data.month_name + ' ' + data.year;
+                var tbody = document.getElementById('calendar-body'); tbody.innerHTML = '';
+                data.calendar.forEach(function(week) {
+                    var tr = document.createElement('tr');
+                    week.forEach(function(day) {
+                        var td = document.createElement('td');
+                        if(day.day === '') { td.className = 'empty-day'; td.innerHTML = '<div style="min-height:80px;"></div>'; }
+                        else {
+                            var div = document.createElement('div'); div.className = 'day-cell' + (day.date === TODAY ? ' today' : ''); div.setAttribute('data-date', day.date);
+                            if(day.color) div.style.backgroundColor = day.color + '26';
+                            div.innerHTML = '<div class="day-number' + (day.is_holiday?' holiday':'') + '">' + day.day + '</div>';
+                            if(day.is_holiday && day.holiday_name) div.innerHTML += '<div class="holiday-name">' + day.holiday_name + '</div>';
+                            if(day.events.length) {
+                                var ec = document.createElement('div'); ec.className = 'events-container';
+                                day.events.slice(0,3).forEach(function(e) {
+                                    var et = document.createElement('div'); et.className = 'event-title'; et.style.background = e.color;
+                                    var timeStr = e.has_time && e.start_time ? e.start_time + ' ' : '';
+                                    et.innerHTML = '<span class="event-title-cat">' + (e.icon||'') + (e.is_recurring?'🔄':'') + ' ' + timeStr + e.title + '</span>';
+                                    et.onclick = function(ev) { ev.stopPropagation(); openEventModalEdit(e.id); }; ec.appendChild(et);
+                                }); div.appendChild(ec);
+                            }
+                            if(day.has_comment) { var f = document.createElement('div'); f.className = 'day-footer'; var i = document.createElement('span'); i.className = 'comment-indicator'; i.style.background = day.comment_color; f.appendChild(i); div.appendChild(f); }
+                            div.onclick = function(e) { if(colorMode) { e.currentTarget.classList.toggle('selected'); if(selectedDays.has(day.date)) selectedDays.delete(day.date); else selectedDays.add(day.date); } else openInfo(day.date); };
+                            td.appendChild(div);
+                        } tr.appendChild(td);
+                    }); tbody.appendChild(tr);
                 });
-                tbody.appendChild(tr);
             });
         }
-
-        async function openInfo(date) {
-            selectedDate = date;
-            const res = await fetch(`/get_day_info/${date}`);
-            const d = await res.json();
-            document.getElementById('info-title').textContent = formatDate(date);
-
-            // Праздник
-            if (d.holiday) {
-                document.getElementById('holiday-info').innerHTML = `
-                    <h4>🎉 Праздник</h4>
-                    <div class="holiday-block">${d.holiday}</div>
-                `;
-            } else {
-                document.getElementById('holiday-info').innerHTML = '';
-            }
-
-            // События
-            if (d.events && d.events.length > 0) {
-                let html = '<h4>📌 События</h4>';
-                d.events.forEach(e => {
-                    html += `
-                        <div class="event-info-item" style="border-left-color: ${e.color};">
-                            <div class="event-info-header">
-                                <span class="event-info-title">${e.is_shared ? '👥 ' : ''}${e.title}</span>
-                                <div class="event-actions">
-                                    <button class="event-edit-btn" onclick="editEvent(${e.id})">✏️</button>
-                                    <button class="event-delete-btn" onclick="deleteEventFromInfo(${e.id})">🗑️</button>
-                                </div>
-                            </div>
-                            ${e.description ? `<div class="event-info-description">${e.description}</div>` : ''}
-                        </div>
-                    `;
+        function loadWeekView() {
+            fetch('/get_week_view/' + currentYear + '/' + currentMonth + '/' + currentDay).then(function(r) { return r.json(); }).then(function(data) {
+                document.getElementById('current-month').textContent = 'Неделя · ' + currentYear;
+                var list = document.getElementById('week-list-desktop');
+                var dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+                openDesktopCard = null;
+                list.innerHTML = data.days.map(function(d) {
+                    var isToday = d.date === TODAY;
+                    var preview = d.events.length ? d.events.map(function(e) { return e.title; }).join(', ') : 'Нет событий';
+                    var slotsHtml = '';
+                    for (var h = 0; h < 24; h++) { slotsHtml += '<div class="week-time-slot-d" data-date="' + d.date + '" data-hour="' + h + '" onclick="openEventModal(\'' + d.date + '\')"></div>'; }
+                    var labelsHtml = '';
+                    for (var h = 0; h < 24; h++) { labelsHtml += '<div class="week-time-label-d">' + String(h).padStart(2,'0') + '</div>'; }
+                    return '<div class="week-day-card-d' + (isToday ? ' today' : '') + ' collapsed" data-date="' + d.date + '"><div class="week-day-header-d" onclick="toggleDesktopCard(this.parentElement)"><span class="day-label-d">' + dayNames[data.days.indexOf(d)] + '</span><span class="day-date-d">' + d.day + '</span><span class="day-events-preview-d">' + preview + '</span><span class="expand-icon-d">▶</span></div><div class="week-day-body-d"><div class="week-timeline-d"><div class="week-time-labels-d">' + labelsHtml + '</div><div class="week-time-content-d" id="timeline-desktop-' + d.date + '">' + slotsHtml + '</div></div></div></div>';
+                }).join('');
+                setTimeout(function() {
+                    data.days.forEach(function(d) {
+                        d.events.forEach(function(e) {
+                            if (e.has_time && e.start_time) {
+                                var sp = e.start_time.split(':'); var sh = parseInt(sp[0]); var sm = parseInt(sp[1]) || 0;
+                                var eh = sh + 1; if (e.end_time) { var ep = e.end_time.split(':'); eh = parseInt(ep[0]) + (parseInt(ep[1]) || 0) / 60; }
+                                var dur = eh - sh; if (dur < 0.5) dur = 0.5;
+                                var slot = document.querySelector('#timeline-desktop-' + d.date + ' .week-time-slot-d[data-hour="' + sh + '"]');
+                                if (slot) {
+                                    var bar = document.createElement('div'); bar.className = 'week-event-block-d';
+                                    bar.style.background = e.color; bar.style.top = (sm / 60 * 40) + 'px'; bar.style.height = (dur * 40) + 'px';
+                                    bar.textContent = e.start_time + ' ' + e.title;
+                                    bar.onclick = function(ev) { ev.stopPropagation(); openEventModalEdit(e.id); };
+                                    slot.appendChild(bar);
+                                }
+                            }
+                        });
+                    });
+                }, 200);
+            });
+        }
+        function toggleDesktopCard(card) {
+            var date = card.getAttribute('data-date');
+            if (openDesktopCard && openDesktopCard !== card) {
+                openDesktopCard.classList.remove('open');
+                document.querySelectorAll('.week-day-card-d').forEach(function(c) {
+                    c.classList.remove('hidden-card');
+                    c.classList.add('collapsed');
                 });
-                document.getElementById('events-info').innerHTML = html;
-            } else {
-                document.getElementById('events-info').innerHTML = '<h4>📌 События</h4><p style="color: var(--text-secondary);">Нет событий</p>';
             }
-
-            // Заметка
-            if (d.comment) {
-                document.getElementById('comment-info').innerHTML = `
-                    <h4>📝 Заметка</h4>
-                    <div class="comment-block" style="border-left-color: ${d.comment.color};">${d.comment.text}</div>
-                `;
-                currentCommentId = d.comment.id;
+            if (card.classList.contains('open')) {
+                card.classList.remove('open');
+                card.classList.add('collapsed');
+                document.querySelectorAll('.week-day-card-d').forEach(function(c) {
+                    c.classList.remove('hidden-card');
+                    c.classList.add('collapsed');
+                });
+                openDesktopCard = null;
             } else {
-                document.getElementById('comment-info').innerHTML = '<h4>📝 Заметка</h4><p style="color: var(--text-secondary);">Нет заметок</p>';
-                currentCommentId = null;
+                document.querySelectorAll('.week-day-card-d').forEach(function(c) {
+                    if (c !== card) {
+                        c.classList.add('hidden-card');
+                        c.classList.remove('open', 'collapsed');
+                    }
+                });
+                card.classList.remove('collapsed', 'hidden-card');
+                card.classList.add('open');
+                openDesktopCard = card;
             }
-
-            document.getElementById('info-modal').style.display = 'block';
         }
-
-        function formatDate(d) {
-            const [y,m,day] = d.split('-');
-            return `${day} ${['Января','Февраля','Марта','Апреля','Мая','Июня','Июля','Августа','Сентября','Октября','Ноября','Декабря'][+m-1]} ${y}`;
-        }
-
+        function formatDate(d) { var parts = d.split('-'); return parts[2] + ' ' + ['Января','Февраля','Марта','Апреля','Мая','Июня','Июля','Августа','Сентября','Октября','Ноября','Декабря'][+parts[1]-1] + ' ' + parts[0]; }
         function closeInfoModal() { document.getElementById('info-modal').style.display = 'none'; }
         function closeEditModal() { document.getElementById('edit-modal').style.display = 'none'; }
-
-        async function openEditModal() {
-            closeInfoModal();
-            const res = await fetch(`/get_comment/${selectedDate}`);
-            const d = await res.json();
-            document.getElementById('comment-text').value = d.text || '';
-            currentCommentId = d.id;
-            document.getElementById('delete-comment-btn').style.display = d.id ? 'block' : 'none';
-            document.getElementById('edit-title').textContent = formatDate(selectedDate);
-            document.getElementById('edit-modal').style.display = 'block';
-            loadEventsList(selectedDate);
-            loadFriendsForSelect();
+        function closeEventModal() { document.getElementById('event-modal').style.display = 'none'; editingEventId = null; }
+        function openInfo(date) {
+            selectedDate = date;
+            fetch('/get_day_info/' + date).then(function(r) { return r.json(); }).then(function(d) {
+                document.getElementById('info-title').textContent = formatDate(date);
+                document.getElementById('holiday-info').innerHTML = d.holiday ? '<div class="info-holiday">🎉 ' + d.holiday + '</div>' : '';
+                if(d.events && d.events.length > 0) {
+                    document.getElementById('events-info').innerHTML = d.events.map(function(e) {
+                        var timeStr = e.has_time && e.start_time ? ' 🕐 ' + e.start_time + (e.end_time ? '-' + e.end_time : '') : '';
+                        return '<div class="info-event-item"><div class="info-event-left"><span class="info-event-color" style="background:' + e.color + ';"></span><span class="info-event-title">' + (e.icon||'') + ' ' + e.title + timeStr + (e.is_recurring?' 🔄':'') + '</span></div><button onclick="openEventModalEdit(' + e.id + ')" style="background:none;border:none;cursor:pointer;font-size:0.9rem;">✏️</button></div>';
+                    }).join('');
+                } else { document.getElementById('events-info').innerHTML = '<p class="info-empty">Нет событий</p>'; }
+                if(d.comment) { document.getElementById('comment-info').innerHTML = '<div class="info-comment">' + d.comment.text + '</div>'; currentCommentId = d.comment.id; }
+                else { document.getElementById('comment-info').innerHTML = '<p class="info-empty">Нет заметок</p>'; currentCommentId = null; }
+                document.getElementById('info-modal').style.display = 'flex';
+            });
         }
-
-        async function loadFriendsForSelect() {
-            const res = await fetch('/api/friends/list');
-            const friends = await res.json();
-            const div = document.getElementById('friends-list-select');
-            div.innerHTML = friends.map(f => `
-                <label style="display:flex;align-items:center;gap:10px;padding:8px;">
-                    <input type="checkbox" value="${f.id}" onchange="toggleFriendSelect(${f.id})">
-                    <img src="${f.avatar}" style="width:30px;height:30px;border-radius:50%;">
-                    <span>${f.username}</span>
-                </label>
-            `).join('');
+        function openEditModal() { closeInfoModal(); fetch('/get_comment/' + selectedDate).then(function(r) { return r.json(); }).then(function(d) { document.getElementById('comment-text').value = d.text || ''; currentCommentId = d.id; document.getElementById('delete-comment-btn').style.display = d.id ? 'block' : 'none'; document.getElementById('edit-title').textContent = formatDate(selectedDate); document.getElementById('edit-modal').style.display = 'flex'; }); }
+        function openEventModal(date) { if(date) selectedDate = date; if(!selectedDate) return; document.getElementById('event-modal-title').textContent = 'Новое событие'; document.getElementById('event-title').value = ''; document.getElementById('event-description').value = ''; document.getElementById('event-color').value = '#48bb78'; document.getElementById('editing-event-id').value = ''; document.getElementById('event-recurring').checked = false; document.getElementById('recurring-options').classList.remove('show'); document.getElementById('event-shared').checked = false; document.getElementById('shared-friends').style.display = 'none'; document.getElementById('delete-event-btn').style.display = 'none'; document.getElementById('event-has-time').checked = false; document.getElementById('time-inputs').style.display = 'none'; document.getElementById('event-start-time').value = ''; document.getElementById('event-end-time').value = ''; selectedFriends.clear(); selectCategory('personal'); document.getElementById('event-modal').style.display = 'flex'; }
+        function openEventModalEdit(eventId) {
+            fetch('/get_event/' + eventId).then(function(r) { return r.json(); }).then(function(e) {
+                if(e.error) return; selectedDate = e.date;
+                document.getElementById('event-modal-title').textContent = 'Редактировать событие';
+                document.getElementById('event-title').value = e.title; document.getElementById('event-description').value = e.description || '';
+                document.getElementById('event-color').value = e.color; document.getElementById('editing-event-id').value = e.id;
+                document.getElementById('event-recurring').checked = e.is_recurring || false;
+                if(e.is_recurring) { document.getElementById('recurring-options').classList.add('show'); document.getElementById('recurring-type').value = e.recurring_type || 'weekly'; }
+                document.getElementById('event-shared').checked = e.is_shared || false;
+                document.getElementById('shared-friends').style.display = e.is_shared ? 'block' : 'none';
+                document.getElementById('event-has-time').checked = e.has_time || false;
+                document.getElementById('time-inputs').style.display = e.has_time ? 'flex' : 'none';
+                document.getElementById('event-start-time').value = e.start_time || '';
+                document.getElementById('event-end-time').value = e.end_time || '';
+                selectCategory(e.category || 'personal'); document.getElementById('delete-event-btn').style.display = 'block';
+                if(e.is_shared) loadSharedFriends();
+                document.getElementById('event-modal').style.display = 'flex';
+            });
         }
-
-        function toggleFriendSelect(id) { selectedFriends.has(id) ? selectedFriends.delete(id) : selectedFriends.add(id); }
-
-        document.getElementById('share-event').addEventListener('change', (e) => {
-            document.getElementById('friends-select').style.display = e.target.checked ? 'block' : 'none';
-        });
-
-        async function saveComment() {
-            await fetch('/save_comment', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({date:selectedDate, text:document.getElementById('comment-text').value, color:'#667eea', id:currentCommentId})});
-            closeEditModal(); loadCalendar();
+        function selectCategory(cat) { document.getElementById('selected-category').value = cat; document.querySelectorAll('.cat-option').forEach(function(o) { o.classList.remove('active'); }); var el = document.querySelector('.cat-option[data-cat="' + cat + '"]'); if(el) el.classList.add('active'); }
+        function toggleRecurring() { document.getElementById('recurring-options').classList.toggle('show', document.getElementById('event-recurring').checked); }
+        function toggleTimeInputs() { document.getElementById('time-inputs').style.display = document.getElementById('event-has-time').checked ? 'flex' : 'none'; }
+        function toggleShared() { var show = document.getElementById('event-shared').checked; document.getElementById('shared-friends').style.display = show ? 'block' : 'none'; if(show) loadSharedFriends(); }
+        function loadSharedFriends() { fetch('/api/friends/list').then(function(r) { return r.json(); }).then(function(friends) { document.getElementById('shared-friends').innerHTML = friends.map(function(f) { return '<div class="shared-item" onclick="toggleSharedFriend(this,' + f.id + ')"><input type="checkbox" value="' + f.id + '"><img src="' + (f.avatar||'/static/uploads/default.png') + '"><span>' + f.username + '</span></div>'; }).join(''); }); }
+        function toggleSharedFriend(el, id) { var cb = el.querySelector('input'); cb.checked = !cb.checked; if(cb.checked) selectedFriends.add(id); else selectedFriends.delete(id); }
+        function saveEvent() {
+            var title = document.getElementById('event-title').value; if(!title) return alert('Введите название');
+            var data = { date: selectedDate, title: title, description: document.getElementById('event-description').value, color: document.getElementById('event-color').value, category: document.getElementById('selected-category').value, is_recurring: document.getElementById('event-recurring').checked, recurring_type: document.getElementById('recurring-type') ? document.getElementById('recurring-type').value : null, recurring_end: document.getElementById('recurring-end') ? document.getElementById('recurring-end').value : null, is_shared: document.getElementById('event-shared').checked, shared_with: Array.from(selectedFriends), id: document.getElementById('editing-event-id').value || null, has_time: document.getElementById('event-has-time').checked, start_time: document.getElementById('event-start-time').value || null, end_time: document.getElementById('event-end-time').value || null };
+            fetch('/save_event', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}).then(function(r) { return r.json(); }).then(function(result) { if(result.success) { closeEventModal(); loadCurrentView(); } });
         }
-
-        async function deleteComment() {
-            if(!confirm('Удалить?')) return;
-            await fetch(`/delete_comment/${currentCommentId}`, {method:'DELETE'});
-            closeEditModal(); loadCalendar();
+        function deleteEvent() { var id = document.getElementById('editing-event-id').value; if(!id) return; if(!confirm('Удалить?')) return; fetch('/delete_event/' + id, {method:'DELETE'}).then(function() { closeEventModal(); loadCurrentView(); }); }
+        function saveComment() { fetch('/save_comment', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({date:selectedDate, text:document.getElementById('comment-text').value})}).then(function() { closeEditModal(); loadCurrentView(); }); }
+        function deleteComment() { if(!confirm('Удалить?')) return; fetch('/delete_comment/' + currentCommentId, {method:'DELETE'}).then(function() { closeEditModal(); loadCurrentView(); }); }
+        function toggleColorMode() { colorMode = !colorMode; document.getElementById('colorModeBtn').textContent = colorMode ? 'Отмена' : 'Окрасить'; document.getElementById('applyColorBtn').style.display = colorMode ? 'inline-block' : 'none'; if(!colorMode) { selectedDays.clear(); document.querySelectorAll('.day-cell').forEach(function(c) { c.classList.remove('selected'); }); } }
+        function applyColor() { if(!selectedDays.size) return alert('Выберите дни'); fetch('/set_day_color', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({dates:Array.from(selectedDays), color:document.getElementById('day-color').value})}).then(function() { toggleColorMode(); loadCurrentView(); }); }
+        function clearColors() { if(!confirm('Очистить?')) return; var dates = []; document.querySelectorAll('.day-cell').forEach(function(c) { var d = c.dataset.date; if(d) dates.push(d); }); fetch('/set_day_color', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({dates:dates, color:''})}).then(function() { loadCurrentView(); }); }
+        function toggleNotifications(e) { e.stopPropagation(); var panel = document.getElementById('notifications-panel'); if (panel.style.display === 'block') { panel.style.display = 'none'; } else { loadNotifications(); panel.style.display = 'block'; } }
+        function deleteNotification(nid, e) { e.stopPropagation(); fetch('/api/notifications/' + nid + '/delete', { method: 'DELETE' }).then(function() { loadNotifications(); }); }
+        function clearAllNotifications(e) { e.stopPropagation(); if (!confirm('Удалить все уведомления?')) return; fetch('/api/notifications/clear_all', { method: 'POST' }).then(function() { loadNotifications(); }); }
+        function loadNotifications() {
+            fetch('/api/notifications').then(function(r) { return r.json(); }).then(function(data) {
+                var badge = document.getElementById('notification-badge'); badge.textContent = data.unread_count || '0'; badge.style.display = data.unread_count > 0 ? 'flex' : 'none';
+                var panel = document.getElementById('notifications-panel');
+                panel.innerHTML = '<div class="notifications-header"><span>Уведомления</span><div style="display:flex;gap:10px;"><button onclick="markAllRead(event)">Прочитать</button><button onclick="clearAllNotifications(event)" style="color:var(--holiday);">Очистить все</button></div></div><div class="notifications-list">' + (data.notifications.length ? data.notifications.map(function(n) { return '<div class="notification-item ' + (n.read ? '' : 'unread') + '"><button class="notification-delete" onclick="deleteNotification(' + n.id + ', event)" title="Удалить">🗑️</button><div' + (n.link ? ' onclick="window.location.href=\'' + n.link + '\'" style="cursor:pointer;"' : '') + '><div class="notification-title">' + (n.title || 'Уведомление') + '</div><div class="notification-message">' + (n.message || '') + '</div><div class="notification-time">' + (n.created_at ? new Date(n.created_at).toLocaleString('ru') : '') + '</div></div></div>'; }).join('') : '<div style="padding:20px;text-align:center;color:var(--text-secondary);">Нет уведомлений</div>') + '</div>';
+            }).catch(function() {});
         }
-
-        async function saveEvent() {
-            const title = document.getElementById('event-title').value;
-            if(!title) return alert('Введите название');
-            const isShared = document.getElementById('share-event').checked;
-            await fetch('/save_event', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({date:selectedDate, title, description:document.getElementById('event-description').value, color:'#48bb78', id:editingEventId, is_shared: isShared, shared_with: Array.from(selectedFriends)})});
-            document.getElementById('event-title').value = '';
-            document.getElementById('event-description').value = '';
-            document.getElementById('share-event').checked = false;
-            document.getElementById('friends-select').style.display = 'none';
-            selectedFriends.clear();
-            editingEventId = null;
-            document.getElementById('save-event-btn').textContent = '➕ Добавить';
-            document.getElementById('cancel-edit-btn').style.display = 'none';
-            loadEventsList(selectedDate);
-            loadCalendar();
-        }
-
-        function cancelEditEvent() {
-            document.getElementById('event-title').value = '';
-            document.getElementById('event-description').value = '';
-            document.getElementById('share-event').checked = false;
-            document.getElementById('friends-select').style.display = 'none';
-            selectedFriends.clear();
-            editingEventId = null;
-            document.getElementById('save-event-btn').textContent = '➕ Добавить';
-            document.getElementById('cancel-edit-btn').style.display = 'none';
-        }
-
-        async function loadEventsList(date) {
-            const res = await fetch(`/get_events/${date}`);
-            const events = await res.json();
-            document.getElementById('events-list').innerHTML = events.length ? '<h4>События:</h4>' + events.map(e => `<div style="display:flex;justify-content:space-between;padding:8px;background:var(--hover);border-radius:8px;margin-bottom:5px;"><span><b>${e.is_shared?'👥 ':''}${e.title}</b></span><div><button onclick="editEvent(${e.id})" class="btn-icon">✏️</button><button onclick="deleteEvent(${e.id})" class="btn-icon">🗑️</button></div></div>`).join('') : '';
-        }
-
-        async function editEvent(id) {
-            const res = await fetch(`/get_event/${id}`);
-            const e = await res.json();
-            document.getElementById('event-title').value = e.title;
-            document.getElementById('event-description').value = e.description || '';
-            document.getElementById('share-event').checked = e.is_shared;
-            editingEventId = e.id;
-            document.getElementById('save-event-btn').textContent = '💾 Обновить';
-            document.getElementById('cancel-edit-btn').style.display = 'block';
-            switchTab('event');
-        }
-
-        async function deleteEvent(id) {
-            if(confirm('Удалить?')) {
-                await fetch(`/delete_event/${id}`, {method:'DELETE'});
-                loadEventsList(selectedDate);
-                loadCalendar();
-            }
-        }
-
-        async function deleteEventFromInfo(id) {
-            if(confirm('Удалить?')) {
-                await fetch(`/delete_event/${id}`, {method:'DELETE'});
-                closeInfoModal();
-                loadCalendar();
-            }
-        }
-
-        function toggleColorMode() {
-            colorMode = !colorMode;
-            document.getElementById('colorModeBtn').textContent = colorMode ? '✅ Выбор' : '🎨 Выбрать дни';
-            document.getElementById('applyColorBtn').style.display = colorMode ? 'inline-block' : 'none';
-            if(!colorMode) { selectedDays.clear(); document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('selected')); }
-        }
-
-        async function applyColor() {
-            if(!selectedDays.size) return alert('Выберите дни');
-            await fetch('/set_day_color', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({dates:Array.from(selectedDays), color:document.getElementById('day-color').value})});
-            toggleColorMode(); loadCalendar();
-        }
-
-        async function clearColors() {
-            if(!confirm('Очистить все цвета?')) return;
-            const dates = [...document.querySelectorAll('.day-cell')].map(c => c.dataset.date).filter(d => d);
-            await fetch('/set_day_color', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({dates, color:''})});
-            loadCalendar();
-        }
-
-        function switchTab(t) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelector(`.tab-btn:${t==='note'?'first':'last'}-child`).classList.add('active');
-            document.getElementById(`${t}-tab`).classList.add('active');
-        }
-
-        // Уведомления
-        async function toggleNotifications(e) {
-            e.stopPropagation();
-            const panel = document.getElementById('notifications-panel');
-            if (panel.style.display === 'block') {
-                panel.style.display = 'none';
-            } else {
-                await loadNotifications();
-                panel.style.display = 'block';
-            }
-        }
-
-        async function deleteNotification(notificationId, event) {
-            event.stopPropagation();
-            try {
-                await fetch(`/api/notifications/${notificationId}/delete`, { method: 'DELETE' });
-                loadNotifications();
-            } catch(e) {
-                console.error('Ошибка удаления:', e);
-            }
-        }
-
-        async function loadNotifications() {
-            try {
-                const res = await fetch('/api/notifications');
-                const data = await res.json();
-                const badge = document.getElementById('notification-badge');
-                badge.textContent = data.unread_count || '0';
-                badge.style.display = data.unread_count > 0 ? 'flex' : 'none';
-
-                const panel = document.getElementById('notifications-panel');
-                panel.innerHTML = `
-                    <div class="notifications-header"><span>Уведомления</span><button onclick="markAllRead(event)">Прочитать все</button></div>
-                    <div class="notifications-list">
-                        ${data.notifications.length ? data.notifications.map(n => `
-                            <div class="notification-item ${n.read ? '' : 'unread'}">
-                                <button class="notification-delete" onclick="deleteNotification(${n.id}, event)">🗑️</button>
-                                <div class="notification-content" ${n.link ? `onclick="window.location.href='${n.link}'"` : ''}>
-                                    <div class="notification-title">${n.title}</div>
-                                    <div class="notification-message">${n.message}</div>
-                                    <div class="notification-time">${new Date(n.created_at).toLocaleString('ru')}</div>
-                                </div>
-                            </div>
-                        `).join('') : '<div class="empty-state">Нет уведомлений</div>'}
-                    </div>
-                `;
-            } catch(e) { console.error(e); }
-        }
-
-        async function markAllRead(e) {
-            e.stopPropagation();
-            await fetch('/api/notifications/read_all', {method:'POST'});
-            loadNotifications();
-        }
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.notifications-dropdown')) {
-                const panel = document.getElementById('notifications-panel');
-                if (panel) panel.style.display = 'none';
-            }
-        });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            initYearSelect();
-            loadCalendar();
-            loadTheme();
-            loadNotifications();
-            setInterval(loadNotifications, 30000);
-        });
-
-        window.onclick = (e) => { if(e.target.classList.contains('modal')) { e.target.style.display = 'none'; } };
+        function markAllRead(e) { e.stopPropagation(); fetch('/api/notifications/read_all', {method:'POST'}).then(function() { loadNotifications(); }); }
+        document.addEventListener('click', function(e) { if (!e.target.closest('.notifications-dropdown')) document.getElementById('notifications-panel').style.display = 'none'; });
+        document.addEventListener('DOMContentLoaded', function() { initYearSelect(); loadCalendar(); loadTheme(); loadNotifications(); setInterval(loadNotifications, 3000); });
+        window.onclick = function(e) { if(e.target.classList.contains('modal')) e.target.style.display = 'none'; };
     </script>
 </body>
 </html>

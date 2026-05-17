@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Профиль</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        * { box-sizing: border-box; }
+        body { padding: 5px !important; font-size: 14px; margin: 0; }
+        .app { height: calc(100vh - 10px); display: flex; flex-direction: column; }
+        .app-header { padding: 8px 10px !important; border-radius: 14px; flex-shrink: 0; }
+        .app-header h1 { font-size: 1.1rem !important; margin: 0; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; }
+        .user-controls { display: flex; align-items: center; gap: 6px; }
+        .profile-link-header { padding: 2px 6px !important; cursor: default; }
+        .user-avatar-header { width: 24px !important; height: 24px !important; border-radius: 50%; }
+        .icon-link { width: 30px !important; height: 30px !important; font-size: 1rem !important; }
+        .calendar-main { padding: 10px !important; border-radius: 14px; flex: 1; overflow-y: auto; }
+        .mobile-nav { display: flex; justify-content: space-around; background: var(--surface); border-radius: 14px; padding: 5px; margin-top: 5px; box-shadow: var(--shadow); border: 1px solid var(--border); flex-shrink: 0; }
+        .mobile-nav a { display: flex; flex-direction: column; align-items: center; gap: 1px; text-decoration: none; color: var(--text-secondary); font-size: 0.6rem; padding: 5px 8px; border-radius: 8px; }
+        .mobile-nav a.active { color: var(--primary); background: rgba(102,126,234,0.1); }
+        .mobile-nav a .nav-icon { font-size: 1rem; }
+        .profile-container { background: var(--surface); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+        .profile-header { display: flex; align-items: center; margin-bottom: 14px; }
+        .profile-header .back-btn { padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 500; cursor: pointer; background: var(--surface); color: var(--text); border: 2px solid var(--border); text-decoration: none; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+        .profile-header h2 { color: var(--text); margin: 0; font-size: 1.1rem; flex: 1; text-align: center; }
+        .avatar-section { display: flex; flex-direction: column; align-items: center; margin-bottom: 16px; }
+        .avatar-preview { width: 75px; height: 75px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); margin-bottom: 6px; background: var(--hover); }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 3px; color: var(--text); font-weight: 500; font-size: 0.78rem; }
+        .form-group small { display: block; margin-top: 2px; color: var(--text-secondary); font-size: 0.65rem; }
+        .form-input { width: 100%; padding: 8px 10px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.85rem; background: var(--surface); color: var(--text); }
+        .form-input:focus { outline: none; border-color: var(--primary); }
+        .form-input:disabled { background: var(--hover); opacity: 0.7; }
+        select.form-input { cursor: pointer; }
+        .form-row { display: flex; gap: 8px; }
+        .form-row .form-group { flex: 1; }
+        .version-selector { display: flex; gap: 6px; }
+        .version-option { flex: 1; padding: 8px; border: 2px solid var(--border); border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.7rem; }
+        .version-option:hover { border-color: var(--primary); }
+        .version-option.active { border-color: var(--primary); background: rgba(102,126,234,0.1); }
+        .version-option .version-icon { font-size: 1.2rem; display: block; margin-bottom: 1px; }
+        .button-group { display: flex; gap: 8px; margin-top: 14px; }
+        .button-group .btn { flex: 1; text-align: center; text-decoration: none; padding: 10px; font-size: 0.85rem; justify-content: center; }
+        .crop-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+        .crop-modal-content { width: 95vw; max-width: 450px; background: var(--surface); border-radius: 14px; padding: 16px; overflow: hidden; }
+        .crop-container { margin-bottom: 12px; max-height: 280px; overflow: hidden; background: #000; border-radius: 10px; }
+        .crop-container img { max-width: 100%; max-height: 280px; }
+        .crop-controls { display: flex; gap: 8px; justify-content: center; }
+        .crop-controls .btn { flex: 1; max-width: 140px; padding: 8px; font-size: 0.8rem; }
+        .cropper-view-box, .cropper-face { border-radius: 50%; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="version-badge">v3.0</div>
+        <header class="app-header">
+            <div class="header-top"><h1>👤 Профиль</h1>
+                <div class="user-controls"><span class="profile-link-header"><img src="{{ user.get_avatar_url() }}" class="user-avatar-header" onerror="this.src='/static/uploads/default.png'"></span><button class="theme-toggle icon-link" onclick="toggleTheme()">🌙</button><button class="logout-btn icon-link" onclick="logout()">🚪</button></div>
+            </div>
+        </header>
+        <main class="calendar-main">
+            <div class="profile-container">
+                <div class="profile-header"><a href="/" class="back-btn">← Назад</a><h2>Настройки</h2></div>
+                <div class="avatar-section">
+                    <img src="{{ user.get_avatar_url() }}" alt="Аватар" id="avatar-preview" class="avatar-preview" onerror="this.src='/static/uploads/default.png'">
+                    <label for="avatar-upload" class="btn btn-secondary" style="padding:5px 10px;font-size:0.7rem;cursor:pointer;">Сменить</label>
+                    <input type="file" id="avatar-upload" accept="image/*" style="display:none;" onchange="handleFileSelect(event)">
+                </div>
+                <form onsubmit="saveProfile(event)">
+                    <div class="form-group"><label>Имя пользователя</label><input type="text" id="username" value="{{ user.username }}" class="form-input"><small>Можно изменить в любое время</small></div>
+                    <div class="form-group"><label>Email</label><input type="email" value="{{ user.email }}" disabled class="form-input"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Пол</label><select id="gender" class="form-input"><option value="male" {% if user.gender == 'male' %}selected{% endif %}>Мужской</option><option value="female" {% if user.gender == 'female' %}selected{% endif %}>Женский</option><option value="other" {% if user.gender == 'other' %}selected{% endif %}>Другой</option></select></div>
+                        <div class="form-group"><label>Дата рождения</label><input type="date" id="birth-date" value="{{ user.birth_date if user.birth_date else '' }}" class="form-input"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Версия интерфейса</label>
+                        <div class="version-selector">
+                            <div class="version-option active" data-version="desktop" onclick="selectVersion('desktop')"><span class="version-icon">💻</span>Десктоп</div>
+                            <div class="version-option" data-version="mobile" onclick="selectVersion('mobile')"><span class="version-icon">📱</span>Мобильная</div>
+                        </div>
+                        <small>Сохраняется на этом устройстве</small>
+                    </div>
+                    <div class="button-group"><button type="submit" class="btn btn-primary">Сохранить</button></div>
+                </form>
+            </div>
+        </main>
+        <nav class="mobile-nav"><a href="/"><span class="nav-icon">📅</span>Календарь</a><a href="/?version=mobile#chat"><span class="nav-icon">💬</span>Чаты</a><a href="/profile?version=mobile" class="active"><span class="nav-icon">👤</span>Профиль</a></nav>
+    </div>
+    <div id="crop-modal" class="crop-modal">
+        <div class="crop-modal-content">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><h3 style="margin:0;font-size:0.9rem;color:var(--text);">Обрежьте фото</h3><button onclick="closeCropModal()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text);">&times;</button></div>
+            <div class="crop-container"><img id="crop-image" style="max-width:100%;display:block;"></div>
+            <div class="crop-controls"><button class="btn btn-secondary" onclick="rotateImage(-90)">Отмена</button><button class="btn btn-primary" onclick="cropImage()">Обрезать</button></div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script>
+        var currentTheme = localStorage.getItem('theme') || '{{ user.theme }}' || 'light';
+        var cropper = null;
+        var selectedVersion = localStorage.getItem('app_version') || 'desktop';
+
+        function loadTheme() { document.documentElement.setAttribute('data-theme', currentTheme); document.querySelector('.theme-toggle').textContent = currentTheme === 'light' ? '🌙' : '☀️'; }
+        function toggleTheme() { currentTheme = currentTheme === 'light' ? 'dark' : 'light'; localStorage.setItem('theme', currentTheme); loadTheme(); fetch('/update_theme', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({theme:currentTheme})}); }
+        function logout() { if(confirm('Выйти?')) window.location.href = '/logout'; }
+        function selectVersion(v) { selectedVersion = v; document.querySelectorAll('.version-option').forEach(function(o) { o.classList.toggle('active', o.dataset.version === v); }); }
+
+        function handleFileSelect(e) { var file = e.target.files[0]; if (!file) return; var reader = new FileReader(); reader.onload = function(ev) { document.getElementById('crop-image').src = ev.target.result; document.getElementById('crop-modal').style.display = 'flex'; if (cropper) cropper.destroy(); cropper = new Cropper(document.getElementById('crop-image'), { aspectRatio: 1, viewMode: 1, autoCropArea: 1 }); }; reader.readAsDataURL(file); }
+        function closeCropModal() { document.getElementById('crop-modal').style.display = 'none'; if(cropper){cropper.destroy();cropper=null;} document.getElementById('avatar-upload').value=''; }
+        function rotateImage(d) { if(cropper) cropper.rotate(d); }
+        function cropImage() { if (!cropper) return; var canvas = cropper.getCroppedCanvas({width:300, height:300}); canvas.toBlob(function(blob) { var fd = new FormData(); fd.append('avatar', blob, 'avatar.jpg'); fetch('/profile', {method:'POST', body:fd}).then(function(r) { return r.json(); }).then(function(data) { if (data.success) { document.getElementById('avatar-preview').src = data.avatar + '?t=' + Date.now(); closeCropModal(); } }); }, 'image/jpeg', 0.9); }
+
+        function saveProfile(e) {
+            e.preventDefault();
+            var data = { username: document.getElementById('username').value.trim(), gender: document.getElementById('gender').value, birth_date: document.getElementById('birth-date').value || null };
+            localStorage.setItem('app_version', selectedVersion);
+            fetch('/profile', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}).then(function(r) { return r.json(); }).then(function(result) {
+                if (result.success) {
+                    alert('✅ Сохранено!');
+                    if (selectedVersion === 'mobile') window.location.href = '/?version=mobile';
+                    else window.location.href = '/';
+                } else { alert('❌ ' + (result.error || 'Ошибка')); }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() { loadTheme(); selectVersion(selectedVersion); });
+        window.onclick = function(e) { if (e.target.id === 'crop-modal') closeCropModal(); };
+    </script>
+</body>
+</html>

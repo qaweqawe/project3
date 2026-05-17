@@ -28,7 +28,6 @@ function toggleTheme() {
     loadCalendar();
 }
 
-// Уведомления
 async function toggleNotifications() {
     const panel = document.getElementById('notifications-panel');
     if (panel.style.display === 'none') {
@@ -236,24 +235,20 @@ function renderCalendar(calendarData) {
                 dayDiv.className = 'day-cell';
                 dayDiv.setAttribute('data-date', day.date);
 
-                // Проверяем сегодняшнюю дату
                 if (day.date === todayDate) {
                     dayDiv.classList.add('today');
                 }
 
-                // Устанавливаем цвет фона
                 if (day.color) {
                     dayDiv.style.backgroundColor = hexToRgba(day.color,
                         currentTheme === 'dark' ? 0.3 : 0.15);
                 }
 
-                // Число дня
                 const dayNumber = document.createElement('div');
                 dayNumber.className = 'day-number' + (day.is_holiday ? ' holiday' : '');
                 dayNumber.textContent = day.day;
                 dayDiv.appendChild(dayNumber);
 
-                // Праздник
                 if (day.is_holiday && day.holiday_name) {
                     const holidayDiv = document.createElement('div');
                     holidayDiv.className = 'holiday-name';
@@ -262,7 +257,6 @@ function renderCalendar(calendarData) {
                     dayDiv.appendChild(holidayDiv);
                 }
 
-                // События
                 if (day.events && day.events.length > 0) {
                     const eventsContainer = document.createElement('div');
                     eventsContainer.className = 'events-container';
@@ -288,7 +282,6 @@ function renderCalendar(calendarData) {
                     dayDiv.appendChild(eventsContainer);
                 }
 
-                // Индикатор заметки
                 if (day.has_comment) {
                     const footer = document.createElement('div');
                     footer.className = 'day-footer';
@@ -350,7 +343,6 @@ async function openInfoModal(date) {
         const eventsInfo = document.getElementById('events-info');
         const commentInfo = document.getElementById('comment-info');
 
-        // Праздник
         if (data.holiday) {
             holidayInfo.innerHTML = `
                 <h4>🎉 Праздник</h4>
@@ -362,7 +354,6 @@ async function openInfoModal(date) {
             holidayInfo.style.display = 'none';
         }
 
-        // События
         if (data.events && data.events.length > 0) {
             let eventsHtml = '<h4>📌 События</h4>';
             data.events.forEach(event => {
@@ -384,7 +375,6 @@ async function openInfoModal(date) {
             eventsInfo.innerHTML = '<h4>📌 События</h4><p style="color: var(--text-secondary);">Нет событий</p>';
         }
 
-        // Заметка
         if (data.comment) {
             commentInfo.innerHTML = `
                 <h4>📝 Заметка</h4>
@@ -446,7 +436,6 @@ async function openEditModalDirect(date) {
 
         document.getElementById('edit-title').textContent = formatDate(date);
 
-        // Сбрасываем форму события
         document.getElementById('event-title').value = '';
         document.getElementById('event-description').value = '';
         document.getElementById('editing-event-id').value = '';
@@ -508,14 +497,14 @@ function toggleColorMode() {
     const applyBtn = document.getElementById('applyColorBtn');
 
     if (colorMode) {
-        btn.textContent = '✅ Выбор';
+        btn.textContent = 'Отмена';
         applyBtn.style.display = 'inline-block';
         selectedDays.clear();
         document.querySelectorAll('.day-cell').forEach(cell => {
             cell.classList.remove('selected');
         });
     } else {
-        btn.textContent = '🎨 Выбрать дни';
+        btn.textContent = 'Окрасить';
         applyBtn.style.display = 'none';
         selectedDays.clear();
         document.querySelectorAll('.day-cell').forEach(cell => {
@@ -526,7 +515,7 @@ function toggleColorMode() {
 
 async function applyColorToSelected() {
     if (selectedDays.size === 0) {
-        alert('Выберите дни для окрашивания!');
+        alert('Выберите дни для окрашивания');
         return;
     }
 
@@ -557,7 +546,7 @@ async function applyColorToSelected() {
 
 async function clearSelectedColors() {
     if (!colorMode) {
-        if (!confirm('Очистить ВСЕ цвета дней в текущем месяце?')) return;
+        if (!confirm('Очистить все цвета дней в текущем месяце?')) return;
 
         const allDays = document.querySelectorAll('.day-cell');
         const dates = [];
@@ -589,7 +578,7 @@ async function clearSelectedColors() {
     }
 
     if (selectedDays.size === 0) {
-        alert('Выберите дни для очистки или выключите режим выбора!');
+        alert('Выберите дни для очистки или выключите режим выбора');
         return;
     }
 
@@ -831,17 +820,31 @@ async function loadEventsList(date) {
     }
 }
 
-function switchTab(tab) {
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        if (btn.textContent.includes(tab === 'note' ? 'Заметка' : 'Событие')) {
-            btn.classList.add('active');
-        }
-    });
-
-    document.getElementById(`${tab}-tab`).classList.add('active');
+function switchTab(tab){
+    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+    var createBtn = document.getElementById('createGroupBtn');
+    if(tab==='friends'){
+        document.querySelectorAll('.tab')[0].classList.add('active');
+        document.getElementById('friendsTab').style.display='block';
+        document.getElementById('groupsTab').style.display='none';
+        document.getElementById('requestsTab').style.display='none';
+        loadFriends();
+        if(createBtn) createBtn.style.display = 'none';
+    }else if(tab==='groups'){
+        document.querySelectorAll('.tab')[1].classList.add('active');
+        document.getElementById('friendsTab').style.display='none';
+        document.getElementById('groupsTab').style.display='block';
+        document.getElementById('requestsTab').style.display='none';
+        loadGroups();
+        if(createBtn) createBtn.style.display = 'inline-block';
+    }else{
+        document.querySelectorAll('.tab')[2].classList.add('active');
+        document.getElementById('friendsTab').style.display='none';
+        document.getElementById('groupsTab').style.display='none';
+        document.getElementById('requestsTab').style.display='block';
+        loadRequests();
+        if(createBtn) createBtn.style.display = 'none';
+    }
 }
 
 function selectEventColor(color) {

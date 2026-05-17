@@ -52,15 +52,13 @@ body {
     bottom: 15px;
     left: 15px;
     color: rgba(255, 255, 255, 0.8);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 500;
     z-index: 999;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px 10px;
+    border-radius: 15px;
     pointer-events: none;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 5px 12px;
-    border-radius: 20px;
-    backdrop-filter: blur(5px);
 }
 
 .app {
@@ -134,7 +132,7 @@ body {
     transition: background 0.2s;
 }
 
-/* Убрана анимация, только выделение */
+
 .profile-link:hover {
     background: var(--border);
 }
@@ -422,7 +420,6 @@ input[type="color"] {
     min-height: 95px;
 }
 
-/* Уведомления */
 .notifications-dropdown {
     position: relative;
 }
@@ -542,7 +539,7 @@ input[type="color"] {
     color: var(--text-secondary);
 }
 
-/* Модальные окна */
+
 .modal {
     display: none;
     position: fixed;
@@ -686,7 +683,7 @@ textarea {
     justify-content: center;
 }
 
-/* Адаптивность */
+
 @media (max-width: 768px) {
     body { padding: 8px; }
     .app { height: calc(100vh - 16px); }

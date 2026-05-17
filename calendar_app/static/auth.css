@@ -189,7 +189,7 @@ body {
     text-decoration: underline;
 }
 
-/* Стили для даты */
+
 input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(0.5);
     cursor: pointer;

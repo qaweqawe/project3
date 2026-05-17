@@ -114,7 +114,6 @@ select.form-input {
     font-size: 1rem;
 }
 
-/* Стили для модального окна обрезки */
 .crop-modal-content {
     width: 90%;
     max-width: 600px;
@@ -146,7 +145,6 @@ select.form-input {
     max-width: 200px;
 }
 
-/* Cropper кастомизация */
 .cropper-view-box,
 .cropper-face {
     border-radius: 50%;
@@ -162,7 +160,6 @@ select.form-input {
     background-color: var(--primary);
 }
 
-/* Адаптивность */
 @media (max-width: 600px) {
     .profile-main {
         padding: 20px;
